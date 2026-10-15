@@ -1,0 +1,38 @@
+#!/bin/sh
+# Cryptwire - pre-commit
+# Bloquea el commit si la identidad de git no es la anonima, si lo que vas a guardar
+# contiene un secreto o si contiene datos personales. Falla cerrado: si no puede
+# comprobar algo, no deja pasar.
+
+fail() { printf 'pre-commit: %s\n' "$1" >&2; exit 1; }
+
+# 1) Identidad: el email de los commits tiene que ser el noreply de GitHub.
+email=$(git config user.email)
+case "$email" in
+  *@users.noreply.github.com) ;;
+  *) fail "el email de git ('$email') no es una direccion noreply de GitHub. Commit bloqueado." ;;
+esac
+
+# 2) Sin gitleaks no hay comprobacion posible.
+command -v gitleaks >/dev/null 2>&1 \
+  || fail "gitleaks no esta instalado (winget install Gitleaks.Gitleaks). Commit bloqueado."
+
+root=$(git rev-parse --show-toplevel) || fail "no encuentro la raiz del repo."
+
+# 3) Secretos: reglas de gitleaks sobre lo que esta en el area de preparacion.
+gitleaks git --pre-commit --staged --redact --no-banner --config "$root/.gitleaks.toml" "$root" \
+  || fail "gitleaks ha encontrado un posible secreto. Commit bloqueado."
+
+# 4) Datos personales: reglas locales que viven FUERA del repo, para no publicarlas.
+#    En la copia del autor, `git config cryptwire.personalRules true` las hace obligatorias.
+personal="$root/../.privado/gitleaks-personal.toml"
+if [ -f "$personal" ]; then
+  gitleaks git --pre-commit --staged --redact --no-banner --config "$personal" "$root" \
+    || fail "hay datos personales en lo que vas a guardar. Commit bloqueado."
+elif [ "$(git config --bool cryptwire.personalRules)" = "true" ]; then
+  fail "faltan las reglas de datos personales ($personal). Commit bloqueado."
+else
+  printf 'pre-commit: aviso, no hay reglas de datos personales en %s\n' "$personal" >&2
+fi
+
+printf 'pre-commit: OK (identidad anonima, sin secretos, sin datos personales)\n' >&2

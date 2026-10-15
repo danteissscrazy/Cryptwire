@@ -1,0 +1,44 @@
+# Compilacion
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+artifacts/
+publish/
+*.binlog
+
+# IDEs
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.rsuser
+
+# Tests
+TestResults/
+coverage*/
+
+# Secretos y datos locales: nunca en el repo
+.env
+.env.*
+*.pfx
+*.p12
+*.snk
+*.key
+*.pem
+secrets.json
+*.local.json
+
+# Datos de sesion de WebView2 (viven en %LOCALAPPDATA%; esto es por si acaso)
+*.WebView2/
+EBWebView/
+
+# Herramientas de IA y notas: viven fuera del repo
+.claude/
+CLAUDE.md
+.obsidian/
+.privado/
+
+# Windows
+Thumbs.db
+desktop.ini

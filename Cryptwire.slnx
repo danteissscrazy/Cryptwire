@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Cryptwire.App/Cryptwire.App.csproj" />
+    <Project Path="src/Cryptwire.Core/Cryptwire.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Cryptwire.Core.Tests/Cryptwire.Core.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,7 @@
+# gitleaks del repo: las reglas por defecto de gitleaks.
+# Los datos personales del autor NO van aqui, porque este fichero es publico:
+# el hook de pre-commit los busca con un fichero local que vive fuera del repo.
+title = "Cryptwire"
+
+[extend]
+useDefault = true
