@@ -62,7 +62,7 @@ ventana o el icono de la bandeja. Se guarda en `%LOCALAPPDATA%\Cryptwire\setting
 | No oír dos tonos | Apaga los de WhatsApp: en WhatsApp, Ajustes › Notificaciones › Sonidos y Tono de llamada |
 | Tu fondo en la conversación | Ajustes › Fondo: se guarda una copia girada como la ves, reducida a 3840 px y sin los datos de la foto. «Oscurecer» para leer bien encima |
 | Avisos en pantalla | Salen en la esquina con los colores de la piel y la foto del contacto (se pide solo a los servidores de WhatsApp; sin foto, su inicial); pulsar uno abre ese chat. No salen si estás en Cryptwire o con algo a pantalla completa. Se pueden apagar y dejar solo el tono |
-| Seguir recibiendo avisos con la ventana cerrada | Cerrar la deja en la bandeja (se puede cambiar en Ajustes). Clic en el icono para volver; clic derecho › Salir para cerrar del todo |
+| Seguir recibiendo avisos con la ventana cerrada | Cerrar la deja en la bandeja (se puede cambiar en Ajustes). Clic en el icono para volver; clic derecho › Salir para cerrar del todo. En la bandeja o minimizada, WhatsApp sigue despierto: Cryptwire le quita el freno que Chromium pone a las pestañas de fondo, así que los avisos llegan a su hora |
 | Arrancar con Windows | Ajustes › Sistema. Arranca en la bandeja, sin ventana |
 | Widgets | De serie, una barra fina bajo la conversación: enlace, Sigilo, Velo, sin leer y reloj. En Ajustes › Widgets, panel a la derecha o ninguno; `F9` rota entre los tres. Con la ventana estrecha (menos de 1100 px), el panel pasa a barra |
 | Sigilo | Una hora sin tonos ni avisos de Cryptwire, llamadas incluidas: su conmutador en los widgets o la bandeja. El «No molestar» de Windows no se ve desde las apps; este es el de Cryptwire |

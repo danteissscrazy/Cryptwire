@@ -24,6 +24,15 @@ internal sealed class WhatsAppHost(
     SkinController skins)
 {
     private const int MaxReloadsInARow = 3;
+
+    /// <summary>
+    /// Que WhatsApp no se duerma escondido. Con la ventana en la bandeja o minimizada, Chromium frena la
+    /// página como a una pestaña de fondo: a los cinco minutos sus temporizadores van a uno por minuto y los
+    /// mensajes y sus avisos llegan tarde o no llegan. Una app de mensajería tiene que seguir despierta.
+    /// </summary>
+    private const string StayAwake =
+        "--disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows";
+
     private static readonly string Home = $"https://{NavigationPolicy.WhatsAppHost}/";
 
     private CoreWebView2? core;
@@ -39,7 +48,9 @@ internal sealed class WhatsAppHost(
     {
         // La sesión del QR vive en %LOCALAPPDATA%\Cryptwire, nunca junto al ejecutable.
         Directory.CreateDirectory(paths.WebViewDataDir);
-        var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: paths.WebViewDataDir);
+        var environment = await CoreWebView2Environment.CreateAsync(
+            userDataFolder: paths.WebViewDataDir,
+            options: new CoreWebView2EnvironmentOptions(additionalBrowserArguments: StayAwake));
         await webView.EnsureCoreWebView2Async(environment);
         core = webView.CoreWebView2;
 
