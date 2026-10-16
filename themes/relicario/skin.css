@@ -1,6 +1,6 @@
 /* Cryptwire · Relicario
    Lo gótico visto a través de un HUD: azul noche, plata, oro y filo de hielo. El retrato de cada chat
-   va dentro de un rosetón de doce lóbulos.
+   va dentro de una corona de doce cuchillas en espiral.
 
    Tres capas, de más a menos robusta frente a las actualizaciones de WhatsApp Web:
    1. Paleta. Se reasignan las variables de color de la web (las --WDS-* de su sistema de diseño y
@@ -403,8 +403,8 @@ header:has([data-testid="wa-wordmark"]) button:not([aria-haspopup]) {
   z-index: 1;
 }
 
-/* Relicario: el retrato, más pequeño, dentro del rosetón. Sin leer, lóbulos carmesí; abierto,
-   lóbulos de hielo y el borde girando despacio. */
+/* Relicario: el retrato, más pequeño, dentro de una corona de cuchillas en espiral (tools/generar-cuchillas.py).
+   Sin leer, cuchillas carmesí; abierto, cuchillas de hielo girando despacio como una sierra. */
 #pane-side [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg)),
 #main header div:has(> img) {
   position: relative;
@@ -413,7 +413,7 @@ header:has([data-testid="wa-wordmark"]) button:not([aria-haspopup]) {
 
 #pane-side [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg)) > :is(img, span),
 #main header div:has(> img) > img {
-  transform: scale(.82);
+  transform: scale(.75);
   box-shadow: 0 0 0 1px rgba(69, 212, 255, .4);
   border-radius: 50%;
 }
@@ -424,17 +424,17 @@ header:has([data-testid="wa-wordmark"]) button:not([aria-haspopup]) {
   position: absolute;
   inset: -3px;
   pointer-events: none;
-  background: url("adornos/roseton.svg") center / 100% 100% no-repeat;
+  background: url("adornos/cuchillas.svg") center / 100% 100% no-repeat;
 }
 
 #pane-side [data-testid="cell-frame-container"]:has([data-testid="icon-unread-count"]) > div:first-child div:is(:has(> img), :has(> span > svg))::after {
-  background-image: url("adornos/roseton-sin-leer.svg");
+  background-image: url("adornos/cuchillas-sin-leer.svg");
   filter: drop-shadow(0 0 4px rgba(240, 71, 92, .55));
 }
 
 #pane-side [aria-selected="true"] > [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg))::after,
 #main header div:has(> img)::after {
-  background-image: url("adornos/roseton-activo.svg");
+  background-image: url("adornos/cuchillas-activo.svg");
   filter: drop-shadow(0 0 5px rgba(69, 212, 255, .6));
 }
 
@@ -442,7 +442,7 @@ header:has([data-testid="wa-wordmark"]) button:not([aria-haspopup]) {
   animation: cw-spin 30s linear infinite;
 }
 
-/* El botón de archivados no es un chat: sin rosetón. */
+/* El botón de archivados no es un chat: sin cuchillas. */
 [data-testid="chatlist-panel-archived-button"] div::after {
   content: none !important;
 }

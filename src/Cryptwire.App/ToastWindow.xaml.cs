@@ -20,8 +20,7 @@ internal sealed partial class ToastWindow : Window
     private const int GwlExStyle = -20;
     private const int WsExToolWindow = 0x80;
     private const int WsExNoActivate = 0x08000000;
-    private const double LobeRadius = 3.6;
-    private const int Lobes = 12;
+    private const int Blades = 12;
 
     /// <summary>Espacio fino entre letras: WPF no tiene espaciado entre caracteres y el diseño lo usa.</summary>
     private static readonly string HairSpace = char.ConvertFromUtf32(0x200A);
@@ -151,33 +150,32 @@ internal sealed partial class ToastWindow : Window
     }
 
     /// <summary>
-    /// El rosetón de la piel en pequeño: doce lóbulos alrededor del retrato, en oro (en carmesí si te
-    /// llaman), con la inicial del chat dentro. No hace falta pedir la foto: así no sale nada a internet.
+    /// El marco de los avatares de la piel en pequeño: doce cuchillas en espiral, como una sierra, en oro
+    /// (en carmesí si te llaman, y entonces giran), con la inicial del chat dentro. Es el mismo dibujo que
+    /// <c>tools/generar-cuchillas.py</c>. No hace falta pedir la foto: así no sale nada a internet.
     /// </summary>
     private void DrawAvatar(string initial, bool isCall)
     {
         Avatar.Children.Clear();
-        var lobeKey = isCall ? "Cw.Alert" : "Cw.Accent";
+        var key = isCall ? "Cw.Alert" : "Cw.Accent";
         const double center = 23;
-        const double ring = 18.5;
 
-        for (var i = 0; i < Lobes; i++)
-        {
-            var angle = i * Math.PI * 2 / Lobes;
-            var lobe = new Ellipse { Width = LobeRadius * 2, Height = LobeRadius * 2, StrokeThickness = 1 };
-            lobe.SetResourceReference(Shape.StrokeProperty, lobeKey);
-            lobe.SetResourceReference(Shape.FillProperty, "Cw.Panel");
-            Canvas.SetLeft(lobe, center + (ring * Math.Cos(angle)) - LobeRadius);
-            Canvas.SetTop(lobe, center + (ring * Math.Sin(angle)) - LobeRadius);
-            Avatar.Children.Add(lobe);
-        }
+        var blades = new Path { Data = Geometry.Parse(BladesGeometry()), RenderTransform = new RotateTransform(0, center, center) };
+        blades.SetResourceReference(Shape.FillProperty, key);
+        Avatar.Children.Add(blades);
 
-        var disk = new Ellipse { Width = 34, Height = 34, StrokeThickness = 1.4 };
-        disk.SetResourceReference(Shape.StrokeProperty, lobeKey);
+        var disk = new Ellipse { Width = 34, Height = 34, StrokeThickness = 1.8 };
+        disk.SetResourceReference(Shape.StrokeProperty, key);
         disk.SetResourceReference(Shape.FillProperty, "Cw.Background");
         Canvas.SetLeft(disk, center - 17);
         Canvas.SetTop(disk, center - 17);
         Avatar.Children.Add(disk);
+
+        var edge = new Ellipse { Width = 28.6, Height = 28.6, StrokeThickness = 0.8, Opacity = 0.35 };
+        edge.SetResourceReference(Shape.StrokeProperty, "Cw.Glow");
+        Canvas.SetLeft(edge, center - 14.3);
+        Canvas.SetTop(edge, center - 14.3);
+        Avatar.Children.Add(edge);
 
         var letter = new TextBlock
         {
@@ -195,16 +193,36 @@ internal sealed partial class ToastWindow : Window
 
         if (isCall && Animated)
         {
-            // Te están llamando: el rosetón late despacio.
-            Avatar.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0.45, TimeSpan.FromMilliseconds(700))
+            // Te están llamando: la sierra gira.
+            blades.RenderTransform.BeginAnimation(RotateTransform.AngleProperty, new DoubleAnimation(0, 360, TimeSpan.FromSeconds(3))
             {
-                AutoReverse = true,
                 RepeatBehavior = RepeatBehavior.Forever,
             });
         }
-        else
+    }
+
+    /// <summary>
+    /// Doce cuchillas alrededor de un aro de radio 17 en un cuadro de 46: largas y cortas alternas, con la
+    /// punta adelantada respecto a la base para que parezcan girar.
+    /// </summary>
+    private static string BladesGeometry()
+    {
+        const double center = 23;
+        const double baseRadius = 16.4;
+        var path = new System.Text.StringBuilder();
+        for (var i = 0; i < Blades; i++)
         {
-            Avatar.BeginAnimation(OpacityProperty, null);
+            var angle = (i * 360.0 / Blades) - 90;
+            var tip = i % 2 == 0 ? 23 : 21;
+            path.Append(CultureInfo.InvariantCulture, $"M{Point(baseRadius, angle - 13)} L{Point(tip, angle + 9)} L{Point(baseRadius, angle + 5)} Z ");
+        }
+
+        return path.ToString();
+
+        static string Point(double radius, double degrees)
+        {
+            var radians = degrees * Math.PI / 180;
+            return string.Create(CultureInfo.InvariantCulture, $"{center + (radius * Math.Cos(radians)):0.##},{center + (radius * Math.Sin(radians)):0.##}");
         }
     }
 
