@@ -65,6 +65,11 @@ internal sealed class SkinController(ThemeManager themes, ISettingsStore store, 
         return RefreshAsync();
     }
 
+    /// <summary>Dónde abrir la ventana: donde la dejaste, o null para centrarla.</summary>
+    public WindowBounds? StartWindow => session.StartWindow;
+
+    public void RememberWindow(WindowBounds? bounds) => Save(session.RememberWindow(bounds));
+
     /// <summary>Vuelve a leer las pieles del disco y pone en la página la que toca.</summary>
     public async Task RefreshAsync()
     {

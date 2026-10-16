@@ -36,12 +36,29 @@ public partial class MainWindow : Window
     internal void Bind(SkinController controller)
     {
         skins = controller;
+        if (controller.StartWindow is not null)
+        {
+            // Donde la dejaste: sin centrarla encima de lo que aplica OnSourceInitialized.
+            WindowStartupLocation = WindowStartupLocation.Manual;
+        }
+
+        Closing += (_, _) => controller.RememberWindow(WindowPlacement.Read(this));
         menu = new SystemMenu(this);
         menu.SafeModeClicked += async (_, _) => await controller.ToggleSafeModeAsync();
         menu.ThemeClicked += async (_, id) => await controller.SelectAsync(id);
         controller.StateChanged += (_, _) => ShowState();
         PreviewKeyDown += OnPreviewKeyDown;
         ShowState();
+    }
+
+    /// <summary>La ventana ya existe para Windows pero aún no se ve: el momento de recolocarla.</summary>
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        if (skins?.StartWindow is { } bounds)
+        {
+            WindowPlacement.Apply(this, bounds);
+        }
     }
 
     private async void OnPreviewKeyDown(object sender, KeyEventArgs e)

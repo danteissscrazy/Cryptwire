@@ -25,6 +25,9 @@ avisos y un `theme.json` con el nombre que se enseña (`{ "name": "Relicario" }`
 | Añadir o retocar una piel | Copia su carpeta en `%LOCALAPPDATA%\Cryptwire\themes`. Si se llama igual que una de la app, gana la tuya |
 | Ensanchar o estrechar la lista de chats | Arrastra la línea que la separa de la conversación. Recuerda un ancho con la ventana apaisada y otro en vertical; doble clic en la línea vuelve al de WhatsApp |
 
+La ventana recuerda dónde la dejaste: tamaño, posición y si estaba maximizada. Si ese monitor ya no
+está, Windows la trae a uno que sí.
+
 La piel se recarga sola al guardar cualquiera de sus ficheros, sin recargar WhatsApp. Los fondos y
 las fuentes viajan incrustados en el CSS (la web solo admite imágenes y fuentes propias o
 incrustadas), y una piel solo puede usar imágenes y fuentes de su propia carpeta.

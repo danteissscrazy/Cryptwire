@@ -3,9 +3,9 @@ using Cryptwire.Core.Settings;
 namespace Cryptwire.Core.Skins;
 
 /// <summary>
-/// Las reglas de la piel elegida y del modo seguro durante una sesión. El modo seguro puede venir de
-/// tus ajustes (se recuerda) o de arrancar con <c>--modo-seguro</c> (solo esa vez, nunca se guarda).
-/// Cada cambio devuelve los ajustes que hay que guardar.
+/// Las reglas de lo que se guarda durante una sesión: piel elegida, modo seguro y ventana. El modo
+/// seguro puede venir de tus ajustes (se recuerda) o de arrancar con <c>--modo-seguro</c> (solo esa
+/// vez, nunca se guarda). Cada cambio devuelve los ajustes que hay que guardar.
 /// </summary>
 public sealed class SkinSession(AppSettings saved, bool safeModeThisSession)
 {
@@ -22,6 +22,15 @@ public sealed class SkinSession(AppSettings saved, bool safeModeThisSession)
         sessionSafeMode = false;
         return Settings = Settings with { ThemeId = themeId, SafeMode = false };
     }
+
+    /// <summary>
+    /// Dónde dejar la ventana al abrir: la guardada si es plausible; si no, null (centrada, de serie).
+    /// </summary>
+    public WindowBounds? StartWindow => Settings.Window is { IsPlausible: true } bounds ? bounds : null;
+
+    /// <summary>Recuerda la ventana al cerrar. Una posición imposible no se guarda.</summary>
+    public AppSettings RememberWindow(WindowBounds? bounds) =>
+        Settings = Settings with { Window = bounds is { IsPlausible: true } ? bounds : Settings.Window };
 
     /// <summary>Lo contrario de lo que se ve ahora: si hay modo seguro (venga de donde venga), se quita.</summary>
     public AppSettings ToggleSafeMode()

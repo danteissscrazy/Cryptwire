@@ -61,6 +61,68 @@ public class SkinSessionTests
         Assert.Equal(new AppSettings { ThemeId = "prueba", SafeMode = false }, toSave);
     }
 
+    [Fact]
+    public void TheWindowOpensWhereYouLeftIt()
+    {
+        var left = new WindowBounds(100, 50, 1180, 1870, Maximized: true);
+        var session = new SkinSession(Saved with { Window = left }, safeModeThisSession: false);
+
+        Assert.Equal(left, session.StartWindow);
+    }
+
+    [Fact]
+    public void WithoutASavedWindowItOpensCentred()
+    {
+        Assert.Null(new SkinSession(Saved, safeModeThisSession: false).StartWindow);
+    }
+
+    [Theory]
+    [InlineData(0, 0, 50, 50)]
+    [InlineData(0, 0, 100000, 900)]
+    [InlineData(-90000, 0, -89000, 900)]
+    [InlineData(500, 500, 100, 100)]
+    public void AnImpossibleSavedWindowIsIgnored(int left, int top, int right, int bottom)
+    {
+        var session = new SkinSession(Saved with { Window = new WindowBounds(left, top, right, bottom, false) }, safeModeThisSession: false);
+
+        Assert.Null(session.StartWindow);
+    }
+
+    [Fact]
+    public void ClosingRemembersTheWindowAndKeepsEverythingElse()
+    {
+        var session = new SkinSession(Saved with { SafeMode = true }, safeModeThisSession: false);
+        var closed = new WindowBounds(-1080, 0, 0, 1920, Maximized: true);
+
+        var toSave = session.RememberWindow(closed);
+
+        Assert.Equal(Saved with { SafeMode = true, Window = closed }, toSave);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnImpossibleWindowOnCloseKeepsTheLastGoodOne(bool hadOne)
+    {
+        var good = new WindowBounds(0, 0, 1280, 820, false);
+        var session = new SkinSession(Saved with { Window = hadOne ? good : null }, safeModeThisSession: false);
+
+        var toSave = session.RememberWindow(new WindowBounds(0, 0, 10, 10, false));
+
+        Assert.Equal(hadOne ? good : null, toSave.Window);
+        Assert.Equal(hadOne ? good : null, session.RememberWindow(null).Window);
+    }
+
+    [Fact]
+    public void ChangingSkinOrSafeModeKeepsTheWindow()
+    {
+        var window = new WindowBounds(0, 0, 1280, 820, false);
+        var session = new SkinSession(Saved with { Window = window }, safeModeThisSession: false);
+
+        Assert.Equal(window, session.Select("prueba").Window);
+        Assert.Equal(window, session.ToggleSafeMode().Window);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("  ")]

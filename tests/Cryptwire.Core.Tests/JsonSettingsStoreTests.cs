@@ -32,6 +32,18 @@ public sealed class JsonSettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void TheWindowSurvivesASaveAndALoad()
+    {
+        var store = new JsonSettingsStore(SettingsPath);
+        var settings = new AppSettings { ThemeId = "relicario", Window = new WindowBounds(-1080, 0, 0, 1920, Maximized: true) };
+
+        store.Save(settings);
+
+        Assert.Equal(settings, store.Load());
+        Assert.DoesNotContain("isPlausible", File.ReadAllText(SettingsPath));
+    }
+
+    [Fact]
     public void SavingAgainReplacesTheFile()
     {
         var store = new JsonSettingsStore(SettingsPath);
