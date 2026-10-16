@@ -6,8 +6,8 @@ using Cryptwire.Core.Skins;
 namespace Cryptwire.App;
 
 /// <summary>
-/// Añade al menú de la ventana (clic derecho en la barra de título, o Alt+Espacio) la lista de pieles
-/// y el modo seguro. Es un menú del propio Windows: funciona aunque la piel haya roto la página.
+/// Añade al menú de la ventana (clic derecho en la barra de título, o Alt+Espacio) la lista de pieles,
+/// el modo seguro y los ajustes. Es un menú del propio Windows: funciona aunque la piel haya roto la página.
 /// </summary>
 internal sealed class SystemMenu
 {
@@ -23,6 +23,7 @@ internal sealed class SystemMenu
 
     // Windows reserva los 4 bits bajos de cada orden y las órdenes desde 0xF000 para las suyas.
     private const int SafeModeCommand = 0x1000;
+    private const int SettingsCommand = 0x1020;
     private const int FirstThemeCommand = 0x1100;
     private const int CommandStep = 0x10;
     private const int MaxThemes = 64;
@@ -40,6 +41,8 @@ internal sealed class SystemMenu
     public event EventHandler? SafeModeClicked;
 
     public event EventHandler<string>? ThemeClicked;
+
+    public event EventHandler? SettingsClicked;
 
     /// <summary>
     /// Rehace los elementos de Cryptwire con el estado actual. Si nada de lo que enseña ha cambiado (una
@@ -74,6 +77,7 @@ internal sealed class SystemMenu
         AppendMenu(menu, MfSeparator, 0, null);
         AppendMenu(menu, MfPopup, (nuint)skins, "Piel\tF7");
         AppendMenu(menu, MfString | (safeMode ? MfChecked : 0), SafeModeCommand, "Modo seguro\tF8");
+        AppendMenu(menu, MfString, SettingsCommand, "Ajustes de Cryptwire…");
 
         // Al cambiar el menú, Windows repinta sus botones de la barra clásica encima de la nuestra (que,
         // con WindowChrome, es zona de la ventana): se repinta la ventana entera para borrarlos.
@@ -92,6 +96,11 @@ internal sealed class SystemMenu
         {
             handled = true;
             SafeModeClicked?.Invoke(this, EventArgs.Empty);
+        }
+        else if (command == SettingsCommand)
+        {
+            handled = true;
+            SettingsClicked?.Invoke(this, EventArgs.Empty);
         }
         else if (command >= FirstThemeCommand && command < FirstThemeCommand + themes.Count * CommandStep)
         {

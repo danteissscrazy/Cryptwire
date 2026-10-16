@@ -1,0 +1,588 @@
+<Window x:Class="Cryptwire.App.SettingsWindow"
+        x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="clr-namespace:Cryptwire.App"
+        Title="Ajustes de Cryptwire"
+        Width="960" Height="680" MinWidth="880" MinHeight="560"
+        ShowInTaskbar="False" ResizeMode="CanResize"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Cw.Panel}"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+
+    <!-- El panel «Ajustes de Cryptwire» de la maqueta v4: placa oscura con filo de oro, etiquetas en mono
+         espaciado y conmutadores de hielo y oro. Todo con los colores de la piel activa (Cw.*). -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="52" ResizeBorderThickness="5" GlassFrameThickness="0" CornerRadius="0"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <FontFamily x:Key="MetaFont">pack://application:,,,/Fuentes/#Share Tech Mono</FontFamily>
+        <FontFamily x:Key="TitleFont">pack://application:,,,/Fuentes/#Cinzel</FontFamily>
+        <app:OnIfConverter x:Key="OnIf" />
+        <BooleanToVisibilityConverter x:Key="Visible" />
+
+        <Style x:Key="SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MetaFont}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Faint}" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+        </Style>
+
+        <Style x:Key="RowTitle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Text}" />
+        </Style>
+
+        <Style x:Key="RowHint" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Soft}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+
+        <Style x:Key="Divider" TargetType="Rectangle">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Fill" Value="{DynamicResource Cw.Line}" />
+            <Setter Property="Margin" Value="0,16,0,16" />
+        </Style>
+
+        <!-- Conmutador: pista de hielo con botón de oro cuando está encendido; apagado, gris. -->
+        <Style x:Key="Switch" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="True" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Width="38" Height="18" Background="Transparent">
+                            <Border x:Name="Track" Background="{DynamicResource Cw.Line}" CornerRadius="2" />
+                            <Border x:Name="Knob" Width="12" Height="12" Margin="3,0" HorizontalAlignment="Left"
+                                    Background="{DynamicResource Cw.Faint}" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="{DynamicResource Cw.GlowEdge}" />
+                                <Setter TargetName="Knob" Property="Background" Value="{DynamicResource Cw.Accent}" />
+                                <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Track" Property="Opacity" Value="0.85" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource Cw.Glow}" />
+                                <Setter TargetName="Track" Property="BorderThickness" Value="1" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botón fantasma: etiqueta en mono y oro, filo fino; al pasar, brillo de hielo. -->
+        <Style x:Key="Ghost" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Accent}" />
+            <Setter Property="FontFamily" Value="{StaticResource MetaFont}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="Transparent" BorderBrush="{DynamicResource Cw.AccentEdge}"
+                                BorderThickness="1" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Cw.GlowHover}" />
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource Cw.Accent}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Cw.GlowPress}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource Cw.Glow}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Segmento de un grupo (piel · ninguno · archivo): el elegido lleva Tag="on". -->
+        <Style x:Key="Segment" TargetType="Button" BasedOn="{StaticResource Ghost}">
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Soft}" />
+            <Setter Property="Padding" Value="10,5" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="Transparent" BorderBrush="{DynamicResource Cw.Line}"
+                                BorderThickness="1" Padding="{TemplateBinding Padding}" Margin="0,0,-1,0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Cw.GlowHover}" />
+                            </Trigger>
+                            <Trigger Property="Tag" Value="on">
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource Cw.Accent}" />
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Cw.AccentSoft}" />
+                                <Setter Property="Foreground" Value="{DynamicResource Cw.Accent}" />
+                                <Setter Property="Panel.ZIndex" Value="1" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Icono pequeño (probar, quitar): sin filo, solo el glifo. -->
+        <Style x:Key="Icon" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Soft}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Cw.GlowHover}" />
+                                <Setter Property="Foreground" Value="{DynamicResource Cw.Text}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Carta de piel, como las de BARRA · PANEL · NINGUNO de la maqueta. -->
+        <Style x:Key="SkinCard" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Width" Value="128" />
+            <Setter Property="Height" Value="62" />
+            <Setter Property="Margin" Value="0,0,10,10" />
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Text}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{DynamicResource Cw.Background}" BorderBrush="{DynamicResource Cw.Line}"
+                                BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource Cw.GlowEdge}" />
+                            </Trigger>
+                            <Trigger Property="Tag" Value="on">
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource Cw.Accent}" />
+                                <Setter TargetName="Bg" Property="BorderThickness" Value="1.5" />
+                                <Setter Property="Foreground" Value="{DynamicResource Cw.Accent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Chip de chat reciente. -->
+        <Style x:Key="Chip" TargetType="Button" BasedOn="{StaticResource Ghost}">
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Soft}" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Padding" Value="9,3" />
+            <Setter Property="Margin" Value="0,0,6,6" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Text}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource Cw.Text}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource Cw.Glow}" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Bg" Background="{DynamicResource Cw.Background}" BorderBrush="{DynamicResource Cw.Line}"
+                                BorderThickness="1" Padding="8,5">
+                            <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource Cw.GlowEdge}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Barra de desplazamiento fina, del color de las líneas. -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="6" />
+            <Setter Property="MinWidth" Value="6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Border x:Name="Bar" Background="{DynamicResource Cw.Line}" />
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bar" Property="Background" Value="{DynamicResource Cw.Faint}" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Deslizador de oscurecer: pista fina, tramo hecho en hielo y tirador de oro. -->
+        <Style x:Key="DimSlider" TargetType="Slider">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid Height="18" Background="Transparent">
+                            <Border Height="2" Background="{DynamicResource Cw.Line}" VerticalAlignment="Center" />
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="2" Background="{DynamicResource Cw.Glow}" VerticalAlignment="Center" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="Transparent" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Width="10" Height="14">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Background="{DynamicResource Cw.Accent}" />
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border BorderBrush="{DynamicResource Cw.AccentEdge}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="52" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Cabecera: ◆ AJUSTES DE CRYPTWIRE, y cerrar. Se arrastra como una barra de título. -->
+            <Border Grid.Row="0" BorderBrush="{DynamicResource Cw.Line}" BorderThickness="0,0,0,1">
+                <DockPanel Margin="24,0,10,0">
+                    <Path DockPanel.Dock="Left" Data="M5,0 L10,5 L5,10 L0,5 Z" Fill="{DynamicResource Cw.Accent}"
+                          VerticalAlignment="Center" />
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Icon}" Width="40" Height="40" Click="OnClose" AutomationProperties.Name="Cerrar"
+                            WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Cerrar (Esc)">
+                        <Path Data="M0,0 L10,10 M10,0 L0,10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1" />
+                    </Button>
+                    <TextBlock Margin="14,1,0,0" VerticalAlignment="Center" FontFamily="{StaticResource MetaFont}"
+                               FontSize="12.5" Foreground="{DynamicResource Cw.Accent}" app:Letterspace.Text="ajustes de cryptwire" />
+                </DockPanel>
+            </Border>
+
+            <Grid Grid.Row="1" Margin="28,22,28,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="1" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- ── Columna izquierda: piel, avisos y sistema ── -->
+                <StackPanel Grid.Column="0" Margin="0,0,28,0">
+                    <TextBlock Style="{StaticResource SectionLabel}" app:Letterspace.Text="piel" />
+                    <ItemsControl ItemsSource="{Binding Skins}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource SkinCard}" AutomationProperties.Name="{Binding Name}"
+                                        Command="{Binding DataContext.SelectSkinCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}"
+                                        Tag="{Binding IsActive, Converter={StaticResource OnIf}, ConverterParameter=True}">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontFamily="{StaticResource TitleFont}" FontWeight="SemiBold"
+                                                   FontSize="14" HorizontalAlignment="Center"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                        <TextBlock FontFamily="{StaticResource MetaFont}" FontSize="9.5" HorizontalAlignment="Center"
+                                                   Margin="0,3,0,0" Foreground="{DynamicResource Cw.Faint}"
+                                                   app:Letterspace.Text="activa"
+                                                   Visibility="{Binding IsActive, Converter={StaticResource Visible}}" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Grid Margin="0,6,0,0">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Modo seguro" />
+                            <TextBlock Style="{StaticResource RowHint}" Text="WhatsApp Web tal cual, sin piel ni fondo. También con F8." />
+                        </StackPanel>
+                        <CheckBox Style="{StaticResource Switch}" HorizontalAlignment="Right" IsChecked="{Binding SafeMode}" AutomationProperties.Name="Modo seguro" />
+                    </Grid>
+
+                    <Rectangle Style="{StaticResource Divider}" />
+                    <TextBlock Style="{StaticResource SectionLabel}" app:Letterspace.Text="avisos" />
+
+                    <Grid>
+                        <StackPanel Margin="0,0,56,0">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Avisos en pantalla" />
+                            <TextBlock Style="{StaticResource RowHint}" Text="Los de Cryptwire, en la esquina. Apagados, solo suena el tono." />
+                        </StackPanel>
+                        <CheckBox Style="{StaticResource Switch}" HorizontalAlignment="Right" IsChecked="{Binding ShowToasts}" AutomationProperties.Name="Avisos en pantalla" />
+                    </Grid>
+
+                    <TextBlock Style="{StaticResource RowTitle}" Text="Tono de los mensajes" Margin="0,14,0,6" />
+                    <DockPanel>
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                            <Button Style="{StaticResource Segment}" Command="{Binding SetMessageToneCommand}" CommandParameter="piel" AutomationProperties.Name="Tono de los mensajes: piel"
+                                    Tag="{Binding MessageToneSource, Converter={StaticResource OnIf}, ConverterParameter=piel}">
+                                <TextBlock app:Letterspace.Text="piel" />
+                            </Button>
+                            <Button Style="{StaticResource Segment}" Command="{Binding SetMessageToneCommand}" CommandParameter="ninguno" AutomationProperties.Name="Tono de los mensajes: ninguno"
+                                    Tag="{Binding MessageToneSource, Converter={StaticResource OnIf}, ConverterParameter=ninguno}">
+                                <TextBlock app:Letterspace.Text="ninguno" />
+                            </Button>
+                            <Button Style="{StaticResource Segment}" Command="{Binding SetMessageToneCommand}" CommandParameter="archivo" AutomationProperties.Name="Tono de los mensajes: archivo"
+                                    Tag="{Binding MessageToneSource, Converter={StaticResource OnIf}, ConverterParameter=archivo}">
+                                <TextBlock app:Letterspace.Text="archivo…" />
+                            </Button>
+                        </StackPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Icon}" Command="{Binding PlayMessageToneCommand}" ToolTip="Probar" AutomationProperties.Name="Probar el tono de los mensajes">
+                            <Path Data="M0,0 L8,5 L0,10 Z" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button>
+                        <TextBlock Text="{Binding MessageToneLabel}" Style="{StaticResource RowHint}" Margin="12,0,6,0"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                    </DockPanel>
+
+                    <TextBlock Style="{StaticResource RowTitle}" Text="Tono de las llamadas" Margin="0,14,0,6" />
+                    <DockPanel>
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                            <Button Style="{StaticResource Segment}" Command="{Binding SetCallToneCommand}" CommandParameter="piel" AutomationProperties.Name="Tono de las llamadas: piel"
+                                    Tag="{Binding CallToneSource, Converter={StaticResource OnIf}, ConverterParameter=piel}">
+                                <TextBlock app:Letterspace.Text="piel" />
+                            </Button>
+                            <Button Style="{StaticResource Segment}" Command="{Binding SetCallToneCommand}" CommandParameter="ninguno" AutomationProperties.Name="Tono de las llamadas: ninguno"
+                                    Tag="{Binding CallToneSource, Converter={StaticResource OnIf}, ConverterParameter=ninguno}">
+                                <TextBlock app:Letterspace.Text="ninguno" />
+                            </Button>
+                            <Button Style="{StaticResource Segment}" Command="{Binding SetCallToneCommand}" CommandParameter="archivo" AutomationProperties.Name="Tono de las llamadas: archivo"
+                                    Tag="{Binding CallToneSource, Converter={StaticResource OnIf}, ConverterParameter=archivo}">
+                                <TextBlock app:Letterspace.Text="archivo…" />
+                            </Button>
+                        </StackPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Icon}" Command="{Binding PlayCallToneCommand}" ToolTip="Probar" AutomationProperties.Name="Probar el tono de las llamadas">
+                            <Path Data="M0,0 L8,5 L0,10 Z" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button>
+                        <TextBlock Text="{Binding CallToneLabel}" Style="{StaticResource RowHint}" Margin="12,0,6,0"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                    </DockPanel>
+
+                    <TextBlock Style="{StaticResource RowHint}" Margin="0,12,0,0" Foreground="{DynamicResource Cw.Faint}"
+                               Text="Para no oír dos tonos, apaga los de WhatsApp: Ajustes › Notificaciones › Sonidos y Tono de llamada." />
+
+                    <Rectangle Style="{StaticResource Divider}" />
+                    <TextBlock Style="{StaticResource SectionLabel}" app:Letterspace.Text="sistema" />
+
+                    <Grid>
+                        <StackPanel Margin="0,0,56,0">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Iniciar con Windows" />
+                            <TextBlock Style="{StaticResource RowHint}" Text="Arranca en la bandeja al iniciar sesión, sin ventana." />
+                        </StackPanel>
+                        <CheckBox Style="{StaticResource Switch}" HorizontalAlignment="Right" IsChecked="{Binding StartWithWindows}" AutomationProperties.Name="Iniciar con Windows" />
+                    </Grid>
+                    <Grid Margin="0,12,0,0">
+                        <StackPanel Margin="0,0,56,0">
+                            <TextBlock Style="{StaticResource RowTitle}" Text="Al cerrar, seguir en la bandeja" />
+                            <TextBlock Style="{StaticResource RowHint}" Text="La ventana se esconde y los avisos siguen llegando. Para salir: bandeja › Salir." />
+                        </StackPanel>
+                        <CheckBox Style="{StaticResource Switch}" HorizontalAlignment="Right" IsChecked="{Binding CloseToTray}" AutomationProperties.Name="Al cerrar, seguir en la bandeja" />
+                    </Grid>
+                </StackPanel>
+
+                <Rectangle Grid.Column="1" Fill="{DynamicResource Cw.Line}" />
+
+                <!-- ── Columna derecha: tonos por chat y fondo ── -->
+                <DockPanel Grid.Column="2" Margin="28,0,0,0">
+                    <StackPanel DockPanel.Dock="Bottom">
+                        <Rectangle Style="{StaticResource Divider}" />
+                        <TextBlock Style="{StaticResource SectionLabel}" app:Letterspace.Text="fondo de la conversación" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Width="200" Height="112" Background="{DynamicResource Cw.Background}"
+                                    BorderBrush="{DynamicResource Cw.Line}" BorderThickness="1" ClipToBounds="True">
+                                <Grid>
+                                    <TextBlock Text="El de la piel" Style="{StaticResource RowHint}" HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                    <Image Source="{Binding WallpaperPreview}" Stretch="UniformToFill" />
+                                    <Rectangle Fill="{DynamicResource Cw.Background}" Opacity="{Binding WallpaperDim, Converter={x:Static app:PercentConverter.Instance}}"
+                                               Visibility="{Binding HasWallpaper, Converter={StaticResource Visible}}" />
+                                </Grid>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Style="{StaticResource Ghost}" Command="{Binding ChooseWallpaperCommand}" AutomationProperties.Name="Elegir imagen">
+                                        <TextBlock app:Letterspace.Text="elegir imagen…" />
+                                    </Button>
+                                    <Button Style="{StaticResource Ghost}" Margin="8,0,0,0" Command="{Binding RemoveWallpaperCommand}" AutomationProperties.Name="Quitar el fondo"
+                                            Visibility="{Binding HasWallpaper, Converter={StaticResource Visible}}">
+                                        <TextBlock app:Letterspace.Text="quitar" />
+                                    </Button>
+                                </StackPanel>
+                                <StackPanel Visibility="{Binding HasWallpaper, Converter={StaticResource Visible}}" Margin="0,14,0,0">
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Right" FontFamily="{StaticResource MetaFont}" FontSize="11"
+                                                   Foreground="{DynamicResource Cw.Soft}" Text="{Binding WallpaperDim, StringFormat={}{0} %}" />
+                                        <TextBlock Style="{StaticResource RowTitle}" Text="Oscurecer" FontSize="12.5" />
+                                    </DockPanel>
+                                    <Slider Style="{StaticResource DimSlider}" AutomationProperties.Name="Oscurecer el fondo" Margin="0,6,0,0" Minimum="0" Maximum="{Binding MaxDim}"
+                                            SmallChange="5" LargeChange="10" IsSnapToTickEnabled="True" TickFrequency="5"
+                                            Value="{Binding WallpaperDim}" />
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource RowHint}" Margin="0,10,0,0"
+                                           Text="Se guarda una copia reducida y sin datos de la foto." />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Style="{StaticResource SectionLabel}" app:Letterspace.Text="tonos por chat" />
+                        <TextBlock Style="{StaticResource RowHint}" Margin="0,-4,0,10"
+                                   Text="Un tono propio para un contacto o un grupo, como en el móvil. El chat se reconoce por su nombre." />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Ghost}" Margin="8,0,0,0" Command="{Binding AddRuleCommand}" AutomationProperties.Name="Elegir tono para el chat">
+                                <TextBlock app:Letterspace.Text="elegir tono…" />
+                            </Button>
+                            <Grid>
+                                <TextBox x:Name="ChatBox" Text="{Binding NewRuleChat, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Nombre del chat" />
+                                <TextBlock Style="{StaticResource RowHint}" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                           Foreground="{DynamicResource Cw.Faint}" Text="Nombre del chat, tal como sale en WhatsApp"
+                                           Visibility="{Binding Text.IsEmpty, ElementName=ChatBox, Converter={StaticResource Visible}}" />
+                            </Grid>
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding RecentChats}" Margin="0,8,0,0"
+                                      Visibility="{Binding HasRecentChats, Converter={StaticResource Visible}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource Chip}" Content="{Binding}"
+                                            Command="{Binding DataContext.UseRecentChatCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource RowHint}" Margin="0,12,0,0" Foreground="{DynamicResource Cw.Faint}"
+                               Text="Aún no hay chats con tono propio."
+                               Visibility="{Binding HasToneRules, Converter={x:Static app:InverseVisibilityConverter.Instance}}" />
+                    <ScrollViewer Margin="0,10,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding ToneRules}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{DynamicResource Cw.Line}" BorderThickness="0,0,0,1" Padding="0,8" Margin="0,0,8,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Chat}" FontFamily="{StaticResource TitleFont}" FontWeight="SemiBold"
+                                                           FontSize="14" Foreground="{DynamicResource Cw.Text}" TextTrimming="CharacterEllipsis" />
+                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                    <TextBlock Style="{StaticResource RowHint}" Margin="0" VerticalAlignment="Center" Text="Mensajes:" />
+                                                    <Button Style="{StaticResource Chip}" Margin="6,0,0,0" Content="{Binding MessageLabel}" ToolTip="Cambiar"
+                                                            Command="{Binding DataContext.ChooseRuleMessageCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Style="{StaticResource Icon}" ToolTip="Probar"
+                                                            Command="{Binding DataContext.PlayFileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding MessageTone}">
+                                                        <Path Data="M0,0 L7,4.5 L0,9 Z" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                                    </Button>
+                                                    <TextBlock Style="{StaticResource RowHint}" Margin="14,0,0,0" VerticalAlignment="Center" Text="Llamadas:" />
+                                                    <Button Style="{StaticResource Chip}" Margin="6,0,0,0" Content="{Binding CallLabel}" ToolTip="Cambiar"
+                                                            Command="{Binding DataContext.ChooseRuleCallCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Style="{StaticResource Icon}" ToolTip="Volver al general"
+                                                            Visibility="{Binding HasCallTone, Converter={StaticResource Visible}}"
+                                                            Command="{Binding DataContext.ClearRuleCallCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}">
+                                                        <Path Data="M0,0 L6,6 M6,0 L0,6" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" />
+                                                    </Button>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Style="{StaticResource Ghost}" VerticalAlignment="Center" Padding="9,4" AutomationProperties.Name="Quitar los tonos del chat"
+                                                    Command="{Binding DataContext.RemoveRuleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <TextBlock app:Letterspace.Text="quitar" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Grid>
+
+            <!-- Pie: lo último que ha pasado, y la promesa de la maqueta. -->
+            <Border Grid.Row="2" BorderBrush="{DynamicResource Cw.Line}" BorderThickness="0,1,0,0" Padding="28,10">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource RowHint}" Margin="16,0,0,0" Foreground="{DynamicResource Cw.Faint}"
+                               Text="Se guarda en tu PC con el resto de ajustes. La web de dentro no se entera." />
+                    <TextBlock Style="{StaticResource RowHint}" Margin="0" Foreground="{DynamicResource Cw.Glow}" Text="{Binding Status}"
+                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

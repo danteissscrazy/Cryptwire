@@ -5,61 +5,129 @@ using Cryptwire.Core.Notifications;
 using Cryptwire.Core.Permissions;
 using Cryptwire.Core.Settings;
 using Cryptwire.Core.Skins;
+using Cryptwire.Core.Startup;
 using Microsoft.Web.WebView2.Core;
 
 namespace Cryptwire.App;
 
 /// <summary>
-/// Punto de arranque y raíz de composición: aquí se crean los objetos y se conectan a mano.
+/// Punto de arranque y raíz de composición: aquí se crean los objetos y se conectan a mano. La app vive
+/// mientras viva el icono de la bandeja; cerrar la ventana solo la esconde, si así lo tienes elegido.
 /// </summary>
 public partial class App : Application
 {
     /// <summary>Arranca sin piel esta vez, sin cambiar tus ajustes. Para cuando la piel rompa la página.</summary>
     private const string SafeModeArgument = "--modo-seguro";
 
+    /// <summary>Cierra del todo la Cryptwire que esté abierta (también desde la bandeja), sin abrir otra.</summary>
+    private const string ExitArgument = "--salir";
+
+    private SingleInstance? instance;
     private SkinController? skins;
+    private TrayIcon? tray;
+    private MainWindow? window;
+    private SettingsWindow? settingsWindow;
+    private NotificationRouter? router;
+    private AppPaths? paths;
+    private int unread;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
-        var paths = AppPaths.FromEnvironment();
-        var window = new MainWindow();
+        instance = new SingleInstance();
+        var exitOnly = e.Args.Contains(ExitArgument, StringComparer.OrdinalIgnoreCase);
+        if (!instance.IsFirst || exitOnly)
+        {
+            // Ya hay una Cryptwire abierta: que se enseñe ella (o que se cierre, con --salir).
+            if (!instance.IsFirst && exitOnly)
+            {
+                instance.AskFirstToExit();
+            }
+            else if (!instance.IsFirst)
+            {
+                instance.AskFirstToShow();
+            }
+
+            Shutdown();
+            return;
+        }
+
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        PaletteResources.Apply(Resources, SkinPalette.Default);
+
+        paths = AppPaths.FromEnvironment();
+        var main = new MainWindow();
+        window = main;
         var skinController = new SkinController(
             new ThemeManager(ThemeRoots(paths)),
             new JsonSettingsStore(paths.SettingsFile),
+            paths.WallpapersDir,
             safeModeThisSession: e.Args.Contains(SafeModeArgument, StringComparer.OrdinalIgnoreCase),
-            window.Dispatcher);
+            main.Dispatcher);
         skins = skinController;
-        var router = new NotificationRouter(new SoundPlayer(), new ToastService(window), () => skinController.Active?.TonePath);
+
+        var toasts = new ToastPresenter(main, main.BringToFront);
+        router = new NotificationRouter(
+            new SoundPlayer(),
+            toasts,
+            new ToneResolver(() => skinController.Settings, () => skinController.Active),
+            () => new DeliveryContext(
+                skinController.Settings.ShowToasts,
+                WindowActive: main.IsVisible && main.IsActive && main.WindowState != WindowState.Minimized,
+                DesktopNotificationState.Query()));
         var host = new WhatsAppHost(
-            window.WebView, paths, new NavigationPolicy(), new PermissionPolicy(), router, skinController);
+            main.WebView, paths, new NavigationPolicy(), new PermissionPolicy(), router, skinController);
 
-        host.EngineStopped += (_, _) =>
-            Fail(window, "El motor del navegador se ha cerrado. Vuelve a abrir Cryptwire.");
+        tray = new TrayIcon();
+        tray.OpenRequested += (_, _) => main.BringToFront();
+        tray.SettingsRequested += (_, _) => ShowSettings();
+        tray.SafeModeRequested += async (_, _) => await skinController.ToggleSafeModeAsync();
+        tray.ExitRequested += (_, _) => ExitApp();
 
-        window.Bind(skinController);
-        window.Loaded += async (_, _) =>
+        skinController.StateChanged += (_, _) => ShowSkinState();
+        host.UnreadChanged += (_, count) =>
         {
-            try
-            {
-                await host.InitializeAsync();
-            }
-            catch (WebView2RuntimeNotFoundException)
-            {
-                Fail(window, "Cryptwire necesita el runtime de Microsoft Edge WebView2, que no está instalado.");
-            }
-            catch (Exception ex)
-            {
-                Fail(window, $"Cryptwire no ha podido arrancar WhatsApp Web.\n\n{ex.Message}");
-            }
+            unread = count;
+            main.ShowUnread(count);
+            tray.Update(skinController.SafeMode, count);
         };
-        window.Show();
+        host.EngineStopped += (_, _) =>
+            Fail(main, "El motor del navegador se ha cerrado. Vuelve a abrir Cryptwire.");
+
+        main.Bind(skinController);
+        main.SettingsRequested += (_, _) => ShowSettings();
+        main.HideOnClose = () => skinController.Settings.CloseToTray;
+        main.HiddenToTray += async (_, _) => await HintTrayOnceAsync(toasts);
+        instance.Listen(
+            show: () => main.Dispatcher.InvokeAsync(main.BringToFront),
+            exit: () => main.Dispatcher.InvokeAsync(ExitApp));
+        SessionEnding += (_, _) => ExitApp();
+        ShowSkinState();
+
+        var startInTray = e.Args.Contains(StartupCommand.TrayArgument, StringComparer.OrdinalIgnoreCase);
+        if (startInTray)
+        {
+            // Al iniciar Windows: WhatsApp arranca por detrás, sin ventana, y avisa desde la bandeja.
+            main.Loaded += async (_, _) =>
+            {
+                await StartAsync(host, main);
+                main.FinishHiddenStart();
+            };
+            main.StartHidden();
+        }
+        else
+        {
+            main.Loaded += async (_, _) => await StartAsync(host, main);
+            main.Show();
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        tray?.Dispose();
         skins?.Dispose();
+        instance?.Dispose();
         base.OnExit(e);
     }
 
@@ -81,9 +149,83 @@ public partial class App : Application
         return roots;
     }
 
-    private void Fail(Window window, string message)
+    private async Task StartAsync(WhatsAppHost host, MainWindow main)
     {
-        MessageBox.Show(window, message, "Cryptwire", MessageBoxButton.OK, MessageBoxImage.Error);
-        Shutdown(1);
+        try
+        {
+            await host.InitializeAsync();
+        }
+        catch (WebView2RuntimeNotFoundException)
+        {
+            Fail(main, "Cryptwire necesita el runtime de Microsoft Edge WebView2, que no está instalado.");
+        }
+        catch (Exception ex)
+        {
+            Fail(main, $"Cryptwire no ha podido arrancar WhatsApp Web.\n\n{ex.Message}");
+        }
+    }
+
+    /// <summary>Los colores de la piel en la ventana, los avisos, los ajustes y la bandeja.</summary>
+    private void ShowSkinState()
+    {
+        if (skins is null)
+        {
+            return;
+        }
+
+        var palette = skins.Active?.Palette ?? SkinPalette.Default;
+        if (palette != PaletteResources.Current)
+        {
+            PaletteResources.Apply(Resources, palette);
+            tray?.ApplyPalette(palette);
+        }
+
+        tray?.Update(skins.SafeMode, unread);
+    }
+
+    /// <summary>La primera vez que cierras la ventana, un aviso de que Cryptwire sigue en la bandeja.</summary>
+    private async Task HintTrayOnceAsync(IToastService toasts)
+    {
+        if (skins is null || skins.Settings.TrayHintShown)
+        {
+            return;
+        }
+
+        toasts.Show(new Toast("cryptwire-bandeja", NotificationKind.App, "Cryptwire sigue aquí",
+            "Recibes los avisos desde la bandeja. Para salir del todo: clic derecho en el icono › Salir.")
+        {
+            Clicked = () => window?.BringToFront(),
+        });
+        await skins.UpdateAsync(s => s with { TrayHintShown = true }, refresh: false);
+    }
+
+    private void ShowSettings()
+    {
+        if (window is null || skins is null || router is null || paths is null)
+        {
+            return;
+        }
+
+        if (settingsWindow is { IsLoaded: true })
+        {
+            settingsWindow.Activate();
+            return;
+        }
+
+        window.BringToFront();
+        settingsWindow = new SettingsWindow(new SettingsViewModel(skins, router.Recent, paths)) { Owner = window };
+        settingsWindow.Show();
+    }
+
+    private void ExitApp()
+    {
+        window?.Exit();
+        Shutdown();
+    }
+
+    private void Fail(Window owner, string message)
+    {
+        MessageBox.Show(owner, message, "Cryptwire", MessageBoxButton.OK, MessageBoxImage.Error);
+        ExitApp();
     }
 }

@@ -4,16 +4,18 @@ using System.Runtime.InteropServices;
 using System.Windows.Threading;
 using Cryptwire.Core.Settings;
 using Cryptwire.Core.Skins;
+using Cryptwire.Core.Wallpapers;
 using Microsoft.Web.WebView2.Core;
 
 namespace Cryptwire.App;
 
 /// <summary>
-/// La piel que se ve, mantenida al día cuando cambias de piel, pulsas el modo seguro o editas sus
-/// ficheros. Las reglas están en Core (<see cref="ThemeManager"/>, <see cref="SkinSession"/>); esto
-/// solo conecta el disco, los ajustes y la página.
+/// La piel que se ve, mantenida al día cuando cambias de piel, pulsas el modo seguro, cambias tu fondo o
+/// editas sus ficheros; y el dueño de tus ajustes mientras la app está abierta, para que dos cambios
+/// seguidos nunca se pisen. Las reglas están en Core (<see cref="ThemeManager"/>, <see cref="SkinSession"/>,
+/// <see cref="WallpaperCss"/>); esto solo conecta el disco, los ajustes y la página.
 /// </summary>
-internal sealed class SkinController(ThemeManager themes, ISettingsStore store, bool safeModeThisSession, Dispatcher dispatcher)
+internal sealed class SkinController(ThemeManager themes, ISettingsStore store, string wallpapersDir, bool safeModeThisSession, Dispatcher dispatcher)
     : IDisposable
 {
     private static readonly TimeSpan Quiet = TimeSpan.FromMilliseconds(300);
@@ -68,7 +70,26 @@ internal sealed class SkinController(ThemeManager themes, ISettingsStore store, 
     /// <summary>Dónde abrir la ventana: donde la dejaste, o null para centrarla.</summary>
     public WindowBounds? StartWindow => session.StartWindow;
 
+    /// <summary>Tus ajustes vigentes, con los cambios de esta sesión.</summary>
+    public AppSettings Settings => session.Settings;
+
     public void RememberWindow(WindowBounds? bounds) => Save(session.RememberWindow(bounds));
+
+    /// <summary>
+    /// Cambia y guarda el resto de ajustes (tonos, fondo, avisos, bandeja). Con <paramref name="refresh"/>,
+    /// vuelve a poner la piel en la página: hace falta si cambia el fondo.
+    /// </summary>
+    public Task UpdateAsync(Func<AppSettings, AppSettings> change, bool refresh = true)
+    {
+        Save(session.Update(change));
+        if (refresh)
+        {
+            return RefreshAsync();
+        }
+
+        StateChanged?.Invoke(this, EventArgs.Empty);
+        return Task.CompletedTask;
+    }
 
     /// <summary>Vuelve a leer las pieles del disco y pone en la página la que toca.</summary>
     public async Task RefreshAsync()
@@ -92,17 +113,18 @@ internal sealed class SkinController(ThemeManager themes, ISettingsStore store, 
 
             if (injector is not null)
             {
+                var wallpaper = WallpaperCss.Build(session.Settings.Wallpaper, wallpapersDir);
                 if (SafeMode)
                 {
                     await injector.RemoveAsync();
                 }
                 else if (Active is null)
                 {
-                    await injector.ApplyAsync(css: null);
+                    await injector.ApplyAsync(css: wallpaper);
                 }
                 else if (await TryBuildAsync(Active) is { } css)
                 {
-                    await injector.ApplyAsync(css);
+                    await injector.ApplyAsync(css + wallpaper);
                 }
             }
         }

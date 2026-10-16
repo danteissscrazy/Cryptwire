@@ -31,6 +31,9 @@ internal sealed class WhatsAppHost(
     /// <summary>El motor del navegador se ha cerrado y la ventana ya no puede mostrar nada.</summary>
     public event EventHandler? EngineStopped;
 
+    /// <summary>Ha cambiado el número de mensajes sin leer (el del título de la página).</summary>
+    public event EventHandler<int>? UnreadChanged;
+
     public async Task InitializeAsync()
     {
         // La sesión del QR vive en %LOCALAPPDATA%\Cryptwire, nunca junto al ejecutable.
@@ -47,6 +50,7 @@ internal sealed class WhatsAppHost(
         core.PermissionRequested += OnPermissionRequested;
         core.NavigationCompleted += OnNavigationCompleted;
         core.ProcessFailed += OnProcessFailed;
+        core.DocumentTitleChanged += (_, _) => UnreadChanged?.Invoke(this, UnreadCount.FromTitle(core.DocumentTitle));
 
         // Concedido de antemano: WhatsApp no necesita pedirlo y así nunca sale el diálogo de WebView2.
         await core.Profile.SetPermissionStateAsync(

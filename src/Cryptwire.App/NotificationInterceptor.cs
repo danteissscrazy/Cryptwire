@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Cryptwire.Core.Notifications;
 using Microsoft.Web.WebView2.Core;
 
@@ -5,7 +6,9 @@ namespace Cryptwire.App;
 
 /// <summary>
 /// Captura cada aviso que emite la página, apaga el aviso por defecto de WebView2 (con el sonido
-/// de Windows) y entrega una <see cref="IncomingNotification"/> al router, que decide.
+/// de Windows) y entrega una <see cref="IncomingNotification"/> al router, que decide. Lo que hagas con
+/// el aviso de Cryptwire (pulsarlo, cerrarlo) vuelve a la página como si fuera el suyo; si la página lo
+/// cierra (una llamada que se coge o se corta), el de Cryptwire se va y deja de sonar.
 /// </summary>
 internal sealed class NotificationInterceptor(NotificationRouter router)
 {
@@ -17,9 +20,28 @@ internal sealed class NotificationInterceptor(NotificationRouter router)
         e.Handled = true;
 
         var notification = e.Notification;
-        if (router.Handle(new IncomingNotification(e.SenderOrigin, notification.Title, notification.Body)))
+        var key = router.Handle(
+            new IncomingNotification(e.SenderOrigin, notification.Title, notification.Body, notification.Tag),
+            clicked: () => Report(notification.ReportClicked),
+            dismissed: () => Report(notification.ReportClosed));
+        if (key is null)
         {
-            notification.ReportShown();
+            return;
+        }
+
+        notification.ReportShown();
+        notification.CloseRequested += (_, _) => router.Close(key);
+    }
+
+    /// <summary>La página puede haber cerrado ya el aviso, o haberse recargado: entonces no hay a quién avisar.</summary>
+    private static void Report(Action report)
+    {
+        try
+        {
+            report();
+        }
+        catch (Exception ex) when (ex is COMException or InvalidOperationException)
+        {
         }
     }
 }

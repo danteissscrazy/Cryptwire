@@ -1,33 +1,64 @@
-﻿using System.Windows;
+﻿using System.ComponentModel;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Cryptwire.Core.Notifications;
 
 namespace Cryptwire.App;
 
 /// <summary>
-/// La ventana: la barra de título propia (logo, nombre, piel activa y botones) y el navegador embebido,
-/// que configura <see cref="WhatsAppHost"/>. Da acceso a las pieles con el teclado (F7, F8) y con el
-/// menú de la ventana (clic derecho en la barra de título).
+/// La ventana: la barra de título propia (logo, nombre, piel activa, ajustes y botones) y el navegador
+/// embebido, que configura <see cref="WhatsAppHost"/>. Da acceso a las pieles con el teclado (F7, F8) y
+/// con el menú de la ventana (clic derecho en la barra de título). Al cerrarla puede quedarse en la bandeja.
 /// </summary>
 public partial class MainWindow : Window
 {
     private const string MaximizeGlyph = "M0.5,0.5 H9.5 V9.5 H0.5 Z";
     private const string RestoreGlyph = "M2.5,0.5 H9.5 V7.5 M0.5,2.5 H7.5 V9.5 H0.5 Z";
-    private static readonly Brush SafeModeBrush = new SolidColorBrush(Color.FromRgb(0xE0, 0x43, 0x5A));
-    private static readonly Brush TagBrush = new SolidColorBrush(Color.FromRgb(0x67, 0x71, 0x89));
+
+    private const int WmMouseMove = 0x0200;
+    private const int WmNcHitTest = 0x0084;
+    private const int WmNcMouseMove = 0x00A0;
+    private const int WmNcLButtonDown = 0x00A1;
+    private const int WmNcLButtonUp = 0x00A2;
+    private const int WmNcMouseLeave = 0x02A2;
+    private const int HtMaxButton = 9;
+    private const uint TmeLeave = 0x2;
+    private const uint TmeNonClient = 0x10;
 
     /// <summary>Espacio fino entre letras: WPF no tiene espaciado entre caracteres y la maqueta lo usa.</summary>
     private static readonly string HairSpace = char.ConvertFromUtf32(0x200A);
 
     private SkinController? skins;
     private SystemMenu? menu;
+    private WindowState shownState = WindowState.Normal;
+    private bool exiting;
+    private bool startingHidden;
+    private int unread = -1;
 
     public MainWindow()
     {
         InitializeComponent();
+        SettingsLabel.Text = Spaced("ajustes");
         StateChanged += (_, _) => FitToState();
         FitToState();
     }
+
+    /// <summary>Has pedido los ajustes: botón de la barra o menú de la ventana.</summary>
+    internal event EventHandler? SettingsRequested;
+
+    /// <summary>
+    /// Se pregunta al cerrar la ventana: true la esconde en la bandeja en vez de cerrar Cryptwire. No se
+    /// pregunta al salir de verdad (<see cref="Exit"/>) ni cuando Windows se apaga.
+    /// </summary>
+    internal Func<bool>? HideOnClose { get; set; }
+
+    /// <summary>La ventana se acaba de esconder en la bandeja.</summary>
+    internal event EventHandler? HiddenToTray;
 
     /// <summary>
     /// Conecta los atajos y el menú con las pieles. WebView2 pasa a la ventana las teclas de función
@@ -42,13 +73,86 @@ public partial class MainWindow : Window
             WindowStartupLocation = WindowStartupLocation.Manual;
         }
 
-        Closing += (_, _) => controller.RememberWindow(WindowPlacement.Read(this));
+        Closing += OnClosing;
         menu = new SystemMenu(this);
         menu.SafeModeClicked += async (_, _) => await controller.ToggleSafeModeAsync();
         menu.ThemeClicked += async (_, id) => await controller.SelectAsync(id);
+        menu.SettingsClicked += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
         controller.StateChanged += (_, _) => ShowState();
         PreviewKeyDown += OnPreviewKeyDown;
         ShowState();
+    }
+
+    /// <summary>Trae Cryptwire delante: desde la bandeja, minimizada o detrás de otra ventana.</summary>
+    internal void BringToFront()
+    {
+        if (startingHidden)
+        {
+            // La has sacado de la bandeja antes de que acabara de cargar: se queda, como una ventana normal.
+            startingHidden = false;
+            ShowInTaskbar = true;
+            ShowActivated = true;
+        }
+
+        if (!IsVisible)
+        {
+            Show();
+        }
+
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = shownState;
+        }
+
+        Activate();
+        WebView.Focus();
+    }
+
+    /// <summary>
+    /// Arranque en la bandeja: WebView2 solo nace dentro de una ventana que se ha enseñado, así que se
+    /// enseña minimizada, sin botón en la barra de tareas y sin quitarte el foco, hasta que WhatsApp está
+    /// cargado (<see cref="FinishHiddenStart"/>).
+    /// </summary>
+    internal void StartHidden()
+    {
+        startingHidden = true;
+        ShowActivated = false;
+        ShowInTaskbar = false;
+        Show();
+    }
+
+    /// <summary>WhatsApp ya está cargado: la ventana pasa a la bandeja y vuelve a ser normal para la próxima vez.</summary>
+    internal void FinishHiddenStart()
+    {
+        if (!startingHidden)
+        {
+            return;
+        }
+
+        Hide();
+        startingHidden = false;
+        ShowInTaskbar = true;
+        ShowActivated = true;
+    }
+
+    /// <summary>Cierra de verdad: guarda dónde estaba la ventana y deja que la app termine.</summary>
+    internal void Exit()
+    {
+        exiting = true;
+        Close();
+    }
+
+    /// <summary>Los sin leer en el botón de la barra de tareas: un círculo del color de alerta con el número.</summary>
+    internal void ShowUnread(int count)
+    {
+        if (count == unread)
+        {
+            return;
+        }
+
+        unread = count;
+        Taskbar.Overlay = count > 0 ? Badge(UnreadCount.Label(count)) : null;
+        Taskbar.Description = count > 0 ? $"Cryptwire · {UnreadCount.Label(count)} sin leer" : "Cryptwire";
     }
 
     /// <summary>La ventana ya existe para Windows pero aún no se ve: el momento de recolocarla.</summary>
@@ -58,6 +162,62 @@ public partial class MainWindow : Window
         if (skins?.StartWindow is { } bounds)
         {
             WindowPlacement.Apply(this, bounds);
+        }
+
+        if (startingHidden)
+        {
+            // Se abrirá como la dejaste (maximizada o no) cuando la saques de la bandeja.
+            shownState = WindowState;
+            WindowState = WindowState.Minimized;
+        }
+
+        // Después de WindowChrome, para que este gancho vaya antes que el suyo.
+        HwndSource.FromHwnd(new WindowInteropHelper(this).Handle).AddHook(OnMessage);
+    }
+
+    private static string Spaced(string text) => string.Join(HairSpace, text.ToUpperInvariant().EnumerateRunes());
+
+    private ImageSource Badge(string label)
+    {
+        const int size = 32;
+        var visual = new DrawingVisual();
+        using (var context = visual.RenderOpen())
+        {
+            var fill = (Brush)FindResource("Cw.Alert");
+            var edge = new Pen((Brush)FindResource("Cw.Background"), 2);
+            context.DrawEllipse(fill, edge, new Point(size / 2.0, size / 2.0), (size / 2.0) - 1, (size / 2.0) - 1);
+            var text = new FormattedText(
+                label.Length > 2 ? "99" : label,
+                CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal),
+                label.Length > 1 ? 15 : 19,
+                Brushes.White,
+                VisualTreeHelper.GetDpi(this).PixelsPerDip);
+            context.DrawText(text, new Point((size - text.Width) / 2, (size - text.Height) / 2));
+        }
+
+        var bitmap = new RenderTargetBitmap(size, size, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(visual);
+        bitmap.Freeze();
+        return bitmap;
+    }
+
+    private void OnClosing(object? sender, CancelEventArgs e)
+    {
+        if (!exiting && HideOnClose?.Invoke() == true)
+        {
+            e.Cancel = true;
+            skins?.RememberWindow(WindowPlacement.Read(this));
+            Hide();
+            HiddenToTray?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
+        // Escondida en la bandeja, Windows ya no sabe si estaba maximizada: vale lo que se guardó al esconderla.
+        if (IsVisible)
+        {
+            skins?.RememberWindow(WindowPlacement.Read(this));
         }
     }
 
@@ -81,9 +241,14 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnSettings(object sender, RoutedEventArgs e) => SettingsRequested?.Invoke(this, EventArgs.Empty);
+
     private void OnMinimize(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);
 
-    private void OnMaximize(object sender, RoutedEventArgs e)
+    /// <summary>Por si el clic llega por WPF (pantalla táctil, lector de pantalla) y no como botón de Windows.</summary>
+    private void OnMaximize(object sender, RoutedEventArgs e) => ToggleMaximize();
+
+    private void ToggleMaximize()
     {
         if (WindowState == WindowState.Maximized)
         {
@@ -98,12 +263,81 @@ public partial class MainWindow : Window
     private void OnClose(object sender, RoutedEventArgs e) => SystemCommands.CloseWindow(this);
 
     /// <summary>
+    /// El botón de maximizar se presenta a Windows como el suyo (<c>HTMAXBUTTON</c>): así Windows 11 enseña
+    /// el panel de diseños de ajuste al pasar el ratón. A cambio, el ratón sobre él ya no llega a WPF: el
+    /// estado (encima, pulsado) y el clic se llevan aquí.
+    /// </summary>
+    private IntPtr OnMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        switch (msg)
+        {
+            case WmNcHitTest when OverMaximize(lParam):
+                handled = true;
+                return HtMaxButton;
+            case WmNcMouseMove when wParam == HtMaxButton:
+                if (MaximizeButton.Tag is not "pressed")
+                {
+                    MaximizeButton.Tag = "hover";
+                }
+
+                TrackLeave(hwnd);
+                handled = true;
+                break;
+            case WmNcLButtonDown when wParam == HtMaxButton:
+                MaximizeButton.Tag = "pressed";
+                handled = true;
+                break;
+            case WmNcLButtonUp when wParam == HtMaxButton:
+                var wasPressed = MaximizeButton.Tag is "pressed";
+                MaximizeButton.Tag = "hover";
+                if (wasPressed)
+                {
+                    ToggleMaximize();
+                }
+
+                handled = true;
+                break;
+            case WmNcMouseMove:
+            case WmNcMouseLeave:
+            case WmMouseMove:
+                MaximizeButton.Tag = null;
+                break;
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private bool OverMaximize(IntPtr lParam)
+    {
+        if (!MaximizeButton.IsVisible || PresentationSource.FromVisual(MaximizeButton) is null)
+        {
+            return false;
+        }
+
+        var x = (short)(lParam.ToInt64() & 0xFFFF);
+        var y = (short)((lParam.ToInt64() >> 16) & 0xFFFF);
+        var point = MaximizeButton.PointFromScreen(new Point(x, y));
+        return point.X >= 0 && point.Y >= 0 && point.X < MaximizeButton.ActualWidth && point.Y < MaximizeButton.ActualHeight;
+    }
+
+    private static void TrackLeave(IntPtr hwnd)
+    {
+        var track = new TrackMouseEventInfo { Size = (uint)Marshal.SizeOf<TrackMouseEventInfo>(), Flags = TmeLeave | TmeNonClient, Window = hwnd };
+        TrackMouseEvent(ref track);
+    }
+
+    /// <summary>
     /// Maximizada, Windows estira la ventana por fuera de la pantalla lo que mide su borde invisible:
-    /// se compensa para que la barra de título no quede cortada. El filo dorado solo va con la ventana suelta.
+    /// se compensa para que la barra de título no quede cortada. El filo de la piel solo va con la ventana suelta.
     /// </summary>
     private void FitToState()
     {
         var maximized = WindowState == WindowState.Maximized;
+        if (WindowState != WindowState.Minimized)
+        {
+            shownState = WindowState;
+        }
+
         Frame.Margin = maximized ? SystemParameters.WindowResizeBorderThickness : new Thickness(0);
         Frame.BorderThickness = new Thickness(maximized ? 0 : 1);
         MaximizeIcon.Data = Geometry.Parse(maximized ? RestoreGlyph : MaximizeGlyph);
@@ -130,8 +364,21 @@ public partial class MainWindow : Window
             { Active: { } theme } => $"piel · {theme.Name}",
             _ => "sin piel",
         };
-        SkinTag.Text = string.Join(HairSpace, tag.ToUpperInvariant().EnumerateRunes());
-        SkinTag.Foreground = skins.SafeMode ? SafeModeBrush : TagBrush;
+        SkinTag.Text = Spaced(tag);
+        SkinTag.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, skins.SafeMode ? "Cw.Alert" : "Cw.Faint");
         menu?.Update(skins.Available, skins.Active, skins.SafeMode);
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct TrackMouseEventInfo
+    {
+        public uint Size;
+        public uint Flags;
+        public IntPtr Window;
+        public uint HoverTime;
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool TrackMouseEvent(ref TrackMouseEventInfo track);
 }

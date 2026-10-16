@@ -6,12 +6,20 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <!-- Solo por el icono de la bandeja (NotifyIcon): WPF no trae uno. -->
+    <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>Cryptwire</AssemblyName>
     <Product>Cryptwire</Product>
     <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
   </PropertyGroup>
 
-  <!-- Logo y fuentes de la barra de título, dentro del ejecutable. Se regeneran con tools/generar-iconos.ps1. -->
+  <!-- Windows Forms se usa por su nombre completo: así sus Application, Button o Color no chocan con los de WPF. -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <!-- Logo y fuentes de la ventana, dentro del ejecutable. Se regeneran con los scripts de tools/. -->
   <ItemGroup>
     <Resource Include="Assets\logo.ico" />
     <Resource Include="Assets\*.png" />
