@@ -20,11 +20,19 @@ public sealed class AppPaths
         RequireAbsolute(appBaseDir, nameof(appBaseDir));
 
         WebViewDataDir = Path.Combine(localAppData, AppFolder, "WebView2");
+        SettingsFile = Path.Combine(localAppData, AppFolder, "settings.json");
+        UserThemesDir = Path.Combine(localAppData, AppFolder, "themes");
         ThemesDir = Path.Combine(appBaseDir, "themes");
     }
 
     /// <summary>Perfil de WebView2: cookies y la sesión vinculada por el QR.</summary>
     public string WebViewDataDir { get; }
+
+    /// <summary>Tus ajustes: piel elegida y modo seguro.</summary>
+    public string SettingsFile { get; }
+
+    /// <summary>Las pieles que añades tú. Una con el mismo nombre que una de la app la sustituye.</summary>
+    public string UserThemesDir { get; }
 
     /// <summary>Las pieles que se distribuyen con la app.</summary>
     public string ThemesDir { get; }

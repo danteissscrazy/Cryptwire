@@ -15,10 +15,15 @@ public class SkinScriptTests
         window.top = window;
         var location = { hostname: "web.whatsapp.com" };
         var document = {
+          readyState: "loading",
           head: { appendChild: function (el) { mounted = mounted.filter(function (m) { return m !== el; }); mounted.push(el); } },
           documentElement: {},
           getElementById: function (id) { return mounted.find(function (m) { return m.id === id; }) || null; },
-          createElement: function (tag) { return { tagName: tag, id: "", textContent: "" }; },
+          createElement: function (tag) {
+            var el = { tagName: tag, id: "", textContent: "" };
+            el.remove = function () { mounted = mounted.filter(function (m) { return m !== el; }); };
+            return el;
+          },
           addEventListener: function (type, fn) { listeners[type] = fn; }
         };
         function MutationObserver() { this.observe = function () {}; this.disconnect = function () {}; }
@@ -39,6 +44,8 @@ public class SkinScriptTests
 
     private static int MountedCount(Engine engine) => (int)engine.Evaluate("mounted.length").AsNumber();
 
+    private static string MountedCss(Engine engine) => engine.Evaluate("mounted[0].textContent").AsString();
+
     [Fact]
     public void MountsTheCssExactlyAsWritten()
     {
@@ -49,7 +56,7 @@ public class SkinScriptTests
         Assert.Equal(1, MountedCount(engine));
         Assert.Equal(SkinScript.StyleElementId, engine.Evaluate("mounted[0].id").AsString());
         Assert.Equal("style", engine.Evaluate("mounted[0].tagName").AsString());
-        Assert.Equal(css, engine.Evaluate("mounted[0].textContent").AsString());
+        Assert.Equal(css, MountedCss(engine));
     }
 
     [Fact]
@@ -86,5 +93,77 @@ public class SkinScriptTests
         Assert.Equal(0, MountedCount(engine));
         engine.Execute("document.head = { appendChild: function (el) { mounted.push(el); } }; listeners.DOMContentLoaded();");
         Assert.Equal(1, MountedCount(engine));
+    }
+
+    [Fact]
+    public void OnTheOpenPageItSwapsTheCssInPlace()
+    {
+        var engine = Run("#app { color: red; }");
+        engine.Execute("document.readyState = 'complete'; listeners = {};");
+
+        engine.Execute(SkinScript.Apply("#app { color: gold; }"));
+
+        Assert.Equal(1, MountedCount(engine));
+        Assert.Equal("#app { color: gold; }", MountedCss(engine));
+        Assert.True(engine.Evaluate("listeners.DOMContentLoaded === undefined").AsBoolean());
+    }
+
+    [Fact]
+    public void RemoveTakesTheSkinOffTheOpenPage()
+    {
+        var engine = Run("#app { color: red; }");
+
+        engine.Execute(SkinScript.Remove());
+
+        Assert.Equal(0, MountedCount(engine));
+    }
+
+    [Theory]
+    [InlineData("location.hostname = 'example.com';")]
+    [InlineData("window.top = {};")]
+    public void RemoveDoesNothingOutsideTheMainWhatsAppDocument(string elsewhere)
+    {
+        var engine = Run("#app { color: red; }");
+        engine.Execute(elsewhere);
+
+        engine.Execute(SkinScript.Remove());
+
+        Assert.Equal(1, MountedCount(engine));
+    }
+
+    [Fact]
+    public void SafeModeDuringPageLoadSticks()
+    {
+        var engine = Run("#app { color: red; }");
+
+        engine.Execute(SkinScript.Remove());
+        engine.Execute("listeners.DOMContentLoaded();");
+
+        Assert.Equal(0, MountedCount(engine));
+    }
+
+    [Fact]
+    public void APendingMountFromAnOlderSkinUsesTheNewestCss()
+    {
+        var engine = Run("#app { color: red; }");
+        var oldListener = engine.Evaluate("listeners.DOMContentLoaded");
+
+        engine.Execute(SkinScript.Apply("#app { color: gold; }"));
+        engine.SetValue("oldListener", oldListener);
+        engine.Execute("oldListener();");
+
+        Assert.Equal(1, MountedCount(engine));
+        Assert.Equal("#app { color: gold; }", MountedCss(engine));
+    }
+
+    [Fact]
+    public void RemoveWithoutASkinIsHarmless()
+    {
+        var engine = new Engine();
+        engine.Execute(FakeDom);
+
+        engine.Execute(SkinScript.Remove());
+
+        Assert.Equal(0, MountedCount(engine));
     }
 }

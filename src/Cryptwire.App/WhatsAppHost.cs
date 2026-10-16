@@ -20,7 +20,7 @@ internal sealed class WhatsAppHost(
     NavigationPolicy navigation,
     PermissionPolicy permissions,
     NotificationRouter router,
-    string skinCss)
+    SkinController skins)
 {
     private const int MaxReloadsInARow = 3;
     private static readonly string Home = $"https://{NavigationPolicy.WhatsAppHost}/";
@@ -52,10 +52,8 @@ internal sealed class WhatsAppHost(
         await core.Profile.SetPermissionStateAsync(
             CoreWebView2PermissionKind.Notifications, Home, CoreWebView2PermissionState.Allow);
 
-        if (skinCss.Length > 0)
-        {
-            await new SkinInjector(core).ApplyAsync(skinCss);
-        }
+        // La piel va antes de abrir WhatsApp para que esté ya en el primer documento.
+        await skins.AttachAsync(core);
 
         new NotificationInterceptor(router).Attach(core);
         core.Navigate(Home);

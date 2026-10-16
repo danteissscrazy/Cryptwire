@@ -138,6 +138,65 @@ public class CssInlinerTests
         Assert.Equal(["fondo.svg"], result.Skipped);
     }
 
+    [Theory]
+    [InlineData("""/* fondo: url("fondo.svg") */ a { color: red; }""")]
+    [InlineData("""a::before { content: "url(fondo.svg)"; }""")]
+    [InlineData("""a::before { content: 'url("fondo.svg")'; }""")]
+    [InlineData("""a::before { content: "\"url(fondo.svg)"; }""")]
+    [InlineData("""a { background: my-url(fondo.svg); }""")]
+    [InlineData("""a { background: url("data:image/svg+xml,%3Csvg fill='url(%23g)'%3E%3C/svg%3E"); }""")]
+    public void UrlsInsideCommentsStringsOrOtherNamesAreNotFiles(string css)
+    {
+        var result = Inline(css);
+
+        Assert.Equal(css, result.Css);
+        Assert.Empty(result.Skipped);
+        Assert.Empty(reads);
+    }
+
+    [Fact]
+    public void RealUrlsNextToCommentsAndStringsAreStillInlined()
+    {
+        var css = """
+            /* el sello */ a::before { content: "url(no.png)"; background: url(fondo.svg); }
+            b { background: url('fondo.svg') /* sin cerrar
+            """;
+
+        var result = Inline(css);
+
+        Assert.Equal(
+            $$"""
+            /* el sello */ a::before { content: "url(no.png)"; background: {{DataUri("image/svg+xml", Svg)}}; }
+            b { background: {{DataUri("image/svg+xml", Svg)}} /* sin cerrar
+            """,
+            result.Css);
+        Assert.Empty(result.Skipped);
+    }
+
+    [Fact]
+    public void AnEscapedQuoteIsNotTheEndOfTheUrl()
+    {
+        var css = "a { background: url(\"fondo.svg\\\"\n); }";
+
+        var result = Inline(css);
+
+        Assert.Equal(css, result.Css);
+        Assert.Empty(result.Skipped);
+        Assert.Empty(reads);
+    }
+
+    [Theory]
+    [InlineData("a { background: url(fondo.svg; }")]
+    [InlineData("a { background: url(\"fondo.svg; }")]
+    [InlineData("a { background: url(\"fondo.svg\" x); }")]
+    [InlineData("a { background: url(")]
+    public void BrokenUrlsAreLeftAsTheyWere(string css)
+    {
+        var result = Inline(css);
+
+        Assert.Equal(css, result.Css);
+    }
+
     [Fact]
     public void MissingFilesAreReportedAndLeftAlone()
     {

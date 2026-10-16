@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+using System.Text;
 
 namespace Cryptwire.Core.Skins;
 
@@ -12,7 +12,7 @@ public sealed record InlinedCss(string Css, IReadOnlyList<string> Skipped);
 /// Solo se leen ficheros de imagen o fuente que estén dentro de la carpeta de la piel: una piel
 /// no puede colar en la página ningún otro fichero del disco.
 /// </summary>
-public static partial class CssInliner
+public static class CssInliner
 {
     private static readonly Dictionary<string, string> MimeTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -37,27 +37,153 @@ public static partial class CssInliner
         ArgumentNullException.ThrowIfNull(readFile);
         var root = Path.GetFullPath(themeDir);
         var skipped = new List<string>();
+        var result = new StringBuilder(css.Length);
 
-        var result = UrlPattern().Replace(css, match =>
+        // Se recorre el CSS a mano para no tocar url(...) dentro de comentarios ni de cadenas
+        // (content: "url(x)"), que no son referencias a ficheros.
+        var i = 0;
+        while (i < css.Length)
         {
-            var reference = match.Groups["path"].Value.Trim();
-            if (!IsRelativeFile(reference))
+            var end = css[i] switch
             {
-                return match.Value;
+                '/' when At(css, i + 1, '*') => CommentEnd(css, i),
+                '"' or '\'' => StringEnd(css, i, out _),
+                _ => -1,
+            };
+
+            if (end < 0 && TryReadUrl(css, i, out var urlEnd, out var reference))
+            {
+                result.Append(Rewrite(css[i..urlEnd], reference, root, readFile, skipped));
+                i = urlEnd;
+                continue;
             }
 
-            var dataUri = TryBuildDataUri(reference, root, readFile);
-            if (dataUri is null)
-            {
-                skipped.Add(reference);
-                return match.Value;
-            }
+            // Cualquier otro carácter pasa tal cual; siempre se avanza al menos uno.
+            end = Math.Max(end, i + 1);
+            result.Append(css, i, end - i);
+            i = end;
+        }
 
-            return $"url(\"{dataUri}\")";
-        });
-
-        return new InlinedCss(result, skipped);
+        return new InlinedCss(result.ToString(), skipped);
     }
+
+    private static string Rewrite(
+        string token, string reference, string root, Func<string, byte[]?> readFile, List<string> skipped)
+    {
+        if (!IsRelativeFile(reference))
+        {
+            return token;
+        }
+
+        var dataUri = TryBuildDataUri(reference, root, readFile);
+        if (dataUri is null)
+        {
+            skipped.Add(reference);
+            return token;
+        }
+
+        return $"url(\"{dataUri}\")";
+    }
+
+    private static bool At(string css, int index, char c) => index < css.Length && css[index] == c;
+
+    /// <summary>Fin de un comentario <c>/* … */</c>; uno sin cerrar llega hasta el final.</summary>
+    private static int CommentEnd(string css, int start)
+    {
+        var close = css.IndexOf("*/", start + 2, StringComparison.Ordinal);
+        return close < 0 ? css.Length : close + 2;
+    }
+
+    /// <summary>
+    /// Fin de una cadena entre comillas, respetando los escapes. Un salto de línea sin escapar la corta:
+    /// entonces, o si se acaba el CSS, <paramref name="closed"/> es false.
+    /// </summary>
+    private static int StringEnd(string css, int start, out bool closed)
+    {
+        var quote = css[start];
+        closed = false;
+        for (var i = start + 1; i < css.Length; i++)
+        {
+            switch (css[i])
+            {
+                case '\\':
+                    i++;
+                    break;
+                case '\n' or '\r' or '\f':
+                    return i;
+                default:
+                    if (css[i] == quote)
+                    {
+                        closed = true;
+                        return i + 1;
+                    }
+
+                    break;
+            }
+        }
+
+        return css.Length;
+    }
+
+    /// <summary>
+    /// Lee un <c>url(…)</c> que empieza en <paramref name="start"/>: con comillas o sin ellas, con
+    /// espacios alrededor. No vale si forma parte de otro nombre (<c>mi-url(…)</c>).
+    /// </summary>
+    private static bool TryReadUrl(string css, int start, out int end, out string reference)
+    {
+        end = start;
+        reference = string.Empty;
+        if (string.Compare(css, start, "url(", 0, 4, StringComparison.OrdinalIgnoreCase) != 0
+            || (start > 0 && IsNameChar(css[start - 1])))
+        {
+            return false;
+        }
+
+        var i = SkipSpaces(css, start + 4);
+        if (i < css.Length && css[i] is '"' or '\'')
+        {
+            var stringEnd = StringEnd(css, i, out var closed);
+            if (!closed)
+            {
+                return false;
+            }
+
+            reference = css[(i + 1)..(stringEnd - 1)];
+            i = SkipSpaces(css, stringEnd);
+        }
+        else
+        {
+            var close = css.IndexOf(')', i);
+            if (close < 0)
+            {
+                return false;
+            }
+
+            reference = css[i..close];
+            i = close;
+        }
+
+        if (!At(css, i, ')'))
+        {
+            return false;
+        }
+
+        end = i + 1;
+        reference = reference.Trim();
+        return true;
+    }
+
+    private static int SkipSpaces(string css, int i)
+    {
+        while (i < css.Length && char.IsWhiteSpace(css[i]))
+        {
+            i++;
+        }
+
+        return i;
+    }
+
+    private static bool IsNameChar(char c) => char.IsLetterOrDigit(c) || c is '-' or '_' or '\\' || c > '\u007F';
 
     /// <summary>
     /// Una ruta relativa a un fichero. Se dejan tal cual las direcciones con esquema
@@ -110,7 +236,4 @@ public static partial class CssInliner
 
         return bytes is null ? null : $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
     }
-
-    [GeneratedRegex("""url\(\s*(?<q>['"]?)(?<path>.*?)\k<q>\s*\)""", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
-    private static partial Regex UrlPattern();
 }

@@ -1,10 +1,9 @@
-﻿using System.Diagnostics;
-using System.IO;
 using System.Windows;
 using Cryptwire.Core;
 using Cryptwire.Core.Navigation;
 using Cryptwire.Core.Notifications;
 using Cryptwire.Core.Permissions;
+using Cryptwire.Core.Settings;
 using Cryptwire.Core.Skins;
 using Microsoft.Web.WebView2.Core;
 
@@ -15,27 +14,31 @@ namespace Cryptwire.App;
 /// </summary>
 public partial class App : Application
 {
-    /// <summary>Fase 1: una única piel de prueba que viaja con la app.</summary>
-    private const string TestTheme = "prueba";
+    /// <summary>Arranca sin piel esta vez, sin cambiar tus ajustes. Para cuando la piel rompa la página.</summary>
+    private const string SafeModeArgument = "--modo-seguro";
+
+    private SkinController? skins;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
         var paths = AppPaths.FromEnvironment();
-        var themeDir = Path.Combine(paths.ThemesDir, TestTheme);
-
         var window = new MainWindow();
-        var router = new NotificationRouter(
-            new SoundPlayer(),
-            new ToastService(window),
-            Path.Combine(themeDir, "tono.wav"));
+        var skinController = new SkinController(
+            new ThemeManager(ThemeRoots(paths)),
+            new JsonSettingsStore(paths.SettingsFile),
+            safeModeThisSession: e.Args.Contains(SafeModeArgument, StringComparer.OrdinalIgnoreCase),
+            window.Dispatcher);
+        skins = skinController;
+        var router = new NotificationRouter(new SoundPlayer(), new ToastService(window), () => skinController.Active?.TonePath);
         var host = new WhatsAppHost(
-            window.WebView, paths, new NavigationPolicy(), new PermissionPolicy(), router, LoadSkinCss(themeDir));
+            window.WebView, paths, new NavigationPolicy(), new PermissionPolicy(), router, skinController);
 
         host.EngineStopped += (_, _) =>
             Fail(window, "El motor del navegador se ha cerrado. Vuelve a abrir Cryptwire.");
 
+        window.Bind(skinController);
         window.Loaded += async (_, _) =>
         {
             try
@@ -54,37 +57,33 @@ public partial class App : Application
         window.Show();
     }
 
+    protected override void OnExit(ExitEventArgs e)
+    {
+        skins?.Dispose();
+        base.OnExit(e);
+    }
+
+    /// <summary>
+    /// Las pieles de la app y luego las tuyas, que ganan si se llaman igual. En Debug,
+    /// <c>CRYPTWIRE_THEMES_DIR</c> añade una carpeta más (la del repo) para editar una piel y verla
+    /// cambiar al guardar.
+    /// </summary>
+    private static List<string> ThemeRoots(AppPaths paths)
+    {
+        List<string> roots = [paths.ThemesDir, paths.UserThemesDir];
+#if DEBUG
+        var dev = Environment.GetEnvironmentVariable("CRYPTWIRE_THEMES_DIR");
+        if (!string.IsNullOrWhiteSpace(dev) && System.IO.Path.IsPathFullyQualified(dev))
+        {
+            roots.Add(dev);
+        }
+#endif
+        return roots;
+    }
+
     private void Fail(Window window, string message)
     {
         MessageBox.Show(window, message, "Cryptwire", MessageBoxButton.OK, MessageBoxImage.Error);
         Shutdown(1);
-    }
-
-    /// <summary>
-    /// Lee el CSS de la piel e incrusta sus fondos y fuentes. Si la piel falta o no se puede leer,
-    /// la web se ve tal cual: una piel rota nunca impide abrir WhatsApp.
-    /// </summary>
-    private static string LoadSkinCss(string themeDir)
-    {
-        var cssPath = Path.Combine(themeDir, "skin.css");
-        try
-        {
-            var inlined = CssInliner.Inline(
-                File.ReadAllText(cssPath),
-                themeDir,
-                path => File.Exists(path) ? File.ReadAllBytes(path) : null);
-
-            foreach (var reference in inlined.Skipped)
-            {
-                Trace.TraceWarning($"Cryptwire: la piel apunta a '{reference}' y no se ha podido incrustar.");
-            }
-
-            return inlined.Css;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            Trace.TraceWarning($"Cryptwire: no se ha podido leer la piel ({ex.GetType().Name}); se muestra la web sin piel.");
-            return string.Empty;
-        }
     }
 }

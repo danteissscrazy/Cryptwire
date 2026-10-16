@@ -21,6 +21,15 @@ public class AppPathsTests
         Assert.Equal(Path.Combine(AppDir, "themes"), paths.ThemesDir);
     }
 
+    [Fact]
+    public void SettingsAndYourOwnThemesLiveInLocalAppData()
+    {
+        var paths = new AppPaths(LocalAppData, AppDir);
+
+        Assert.Equal(Path.Combine(LocalAppData, "Cryptwire", "settings.json"), paths.SettingsFile);
+        Assert.Equal(Path.Combine(LocalAppData, "Cryptwire", "themes"), paths.UserThemesDir);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

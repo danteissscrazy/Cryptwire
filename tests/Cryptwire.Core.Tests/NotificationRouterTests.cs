@@ -13,7 +13,7 @@ public class NotificationRouterTests
     [Fact]
     public void PlaysTheSkinToneAndShowsTheNotice()
     {
-        var router = new NotificationRouter(sound, toast, @"C:\cryptwire\tono.wav");
+        var router = new NotificationRouter(sound, toast, () => @"C:\cryptwire\tono.wav");
 
         Assert.True(router.Handle(message));
 
@@ -27,7 +27,7 @@ public class NotificationRouterTests
     [InlineData("  ")]
     public void WithoutToneItStaysSilentButStillNotifies(string? tonePath)
     {
-        var router = new NotificationRouter(sound, toast, tonePath);
+        var router = new NotificationRouter(sound, toast, () => tonePath);
 
         Assert.True(router.Handle(message));
 
@@ -38,13 +38,26 @@ public class NotificationRouterTests
     [Fact]
     public void EachNotificationSoundsOnce()
     {
-        var router = new NotificationRouter(sound, toast, "tono.wav");
+        var router = new NotificationRouter(sound, toast, () => "tono.wav");
 
         router.Handle(message);
         router.Handle(message with { Body = "Otro" });
 
         Assert.Equal(2, sound.Played.Count);
         Assert.Equal(2, toast.Shown.Count);
+    }
+
+    [Fact]
+    public void TheToneFollowsTheSkinThatIsActiveWhenTheNoticeArrives()
+    {
+        var tone = @"C:\pieles\prueba\tono.wav";
+        var router = new NotificationRouter(sound, toast, () => tone);
+
+        router.Handle(message);
+        tone = @"C:\pieles\relicario\tono.wav";
+        router.Handle(message);
+
+        Assert.Equal([@"C:\pieles\prueba\tono.wav", @"C:\pieles\relicario\tono.wav"], sound.Played);
     }
 
     [Theory]
@@ -54,7 +67,7 @@ public class NotificationRouterTests
     [InlineData("")]
     public void NoticesFromAnyoneElseAreDropped(string origin)
     {
-        var router = new NotificationRouter(sound, toast, "tono.wav");
+        var router = new NotificationRouter(sound, toast, () => "tono.wav");
 
         Assert.False(router.Handle(message with { Origin = origin }));
 
@@ -65,7 +78,7 @@ public class NotificationRouterTests
     [Fact]
     public void RejectsANullNotification()
     {
-        var router = new NotificationRouter(sound, toast, "tono.wav");
+        var router = new NotificationRouter(sound, toast, () => "tono.wav");
 
         Assert.Throws<ArgumentNullException>(() => router.Handle(null!));
         Assert.Empty(sound.Played);

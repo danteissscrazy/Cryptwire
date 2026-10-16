@@ -4,20 +4,39 @@ using Microsoft.Web.WebView2.Core;
 namespace Cryptwire.App;
 
 /// <summary>
-/// Inyecta el CSS de la piel en cada carga de página. Fase 1: solo aplicar; quitarla (modo seguro)
-/// y recargarla en caliente llegan en la Fase 2.
+/// Pone y quita el CSS de la piel: en cada documento que se cree a partir de ahora y en la página
+/// que ya está abierta, sin recargar WhatsApp.
 /// </summary>
 internal sealed class SkinInjector(CoreWebView2 core)
 {
     private string? scriptId;
 
+    /// <summary>
+    /// El script nuevo se añade antes de quitar el viejo: una navegación justo entre medias nunca se
+    /// queda sin piel, y si añadirlo falla, sigue el anterior.
+    /// </summary>
     public async Task ApplyAsync(string css)
     {
-        if (scriptId is not null)
-        {
-            core.RemoveScriptToExecuteOnDocumentCreated(scriptId);
-        }
+        var script = SkinScript.Apply(css);
+        var previous = scriptId;
+        scriptId = await core.AddScriptToExecuteOnDocumentCreatedAsync(script);
+        Forget(previous);
+        await core.ExecuteScriptAsync(script);
+    }
 
-        scriptId = await core.AddScriptToExecuteOnDocumentCreatedAsync(SkinScript.Apply(css));
+    /// <summary>Modo seguro: WhatsApp Web tal cual.</summary>
+    public async Task RemoveAsync()
+    {
+        Forget(scriptId);
+        scriptId = null;
+        await core.ExecuteScriptAsync(SkinScript.Remove());
+    }
+
+    private void Forget(string? id)
+    {
+        if (id is not null)
+        {
+            core.RemoveScriptToExecuteOnDocumentCreated(id);
+        }
     }
 }
