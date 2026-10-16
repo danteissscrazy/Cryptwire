@@ -87,9 +87,13 @@ internal sealed class SkinController(ThemeManager themes, ISettingsStore store, 
 
             if (injector is not null)
             {
-                if (SafeMode || Active is null)
+                if (SafeMode)
                 {
                     await injector.RemoveAsync();
+                }
+                else if (Active is null)
+                {
+                    await injector.ApplyAsync(css: null);
                 }
                 else if (await TryBuildAsync(Active) is { } css)
                 {

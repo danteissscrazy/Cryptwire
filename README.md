@@ -23,6 +23,7 @@ avisos y un `theme.json` con el nombre que se enseña (`{ "name": "Relicario" }`
 | Apagar la piel (modo seguro) | `F8`, o el mismo menú. Se recuerda entre sesiones |
 | Arrancar sin piel una sola vez | `Cryptwire.exe --modo-seguro` |
 | Añadir o retocar una piel | Copia su carpeta en `%LOCALAPPDATA%\Cryptwire\themes`. Si se llama igual que una de la app, gana la tuya |
+| Ensanchar o estrechar la lista de chats | Arrastra la línea que la separa de la conversación. Recuerda un ancho con la ventana apaisada y otro en vertical; doble clic en la línea vuelve al de WhatsApp |
 
 La piel se recarga sola al guardar cualquiera de sus ficheros, sin recargar WhatsApp. Los fondos y
 las fuentes viajan incrustados en el CSS (la web solo admite imágenes y fuentes propias o
