@@ -34,6 +34,18 @@ public class NotificationRouterTests
     }
 
     [Fact]
+    public void TheChatPhotoReachesTheNoticeOnlyIfItIsFromWhatsApp()
+    {
+        var router = Router();
+
+        router.Handle(message with { IconUri = "https://pps.whatsapp.net/v/foto.jpg" });
+        router.Handle(message with { IconUri = "https://otro-sitio.example/foto.jpg" });
+
+        Assert.Equal("https://pps.whatsapp.net/v/foto.jpg", toast.Shown[0].IconUri);
+        Assert.Null(toast.Shown[1].IconUri);
+    }
+
+    [Fact]
     public void ACallRingsWithTheCallToneUntilItIsAnswered()
     {
         var key = Router().Handle(call)!;

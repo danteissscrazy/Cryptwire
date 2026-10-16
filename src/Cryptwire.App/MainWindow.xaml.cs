@@ -71,6 +71,9 @@ public partial class MainWindow : Window
     /// <summary>F9: el siguiente modo de widgets (barra, panel, ninguno).</summary>
     internal event EventHandler? WidgetModeRequested;
 
+    /// <summary>Ctrl+W: cerrar el chat abierto.</summary>
+    internal event EventHandler? CloseChatRequested;
+
     /// <summary>Los widgets enseñan lo que da este modelo, igual en la barra que en el panel.</summary>
     internal void ShowWidgets(WidgetsViewModel model)
     {
@@ -251,7 +254,20 @@ public partial class MainWindow : Window
 
     private async void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (skins is null || Keyboard.Modifiers != ModifierKeys.None)
+        if (skins is null)
+        {
+            return;
+        }
+
+        // Ctrl+W: cerrar el chat abierto, como en WhatsApp para Windows.
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.W)
+        {
+            e.Handled = true;
+            CloseChatRequested?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
+        if (Keyboard.Modifiers != ModifierKeys.None)
         {
             return;
         }

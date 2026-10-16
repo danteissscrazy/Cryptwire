@@ -55,6 +55,7 @@ public sealed class NotificationRouter(ISoundPlayer soundPlayer, IToastService t
         {
             toastService.Show(new Toast(key, kind, notification.Title, notification.Body)
             {
+                IconUri = NotificationIcon.Classify(notification.IconUri) == IconSource.None ? null : notification.IconUri,
                 Clicked = () =>
                 {
                     soundPlayer.StopRinging(key);

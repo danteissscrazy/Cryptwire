@@ -35,6 +35,7 @@ noche, plata, oro y filo de hielo.
 | Arrancar sin piel una sola vez | `Cryptwire.exe --modo-seguro` |
 | Añadir o retocar una piel | Copia su carpeta en `%LOCALAPPDATA%\Cryptwire\themes`. Si se llama igual que una de la app, gana la tuya |
 | Ensanchar o estrechar la lista de chats | Arrastra la línea que la separa de la conversación. Recuerda un ancho con la ventana apaisada y otro en vertical; doble clic en la línea vuelve al de WhatsApp |
+| Cerrar el chat abierto | `Ctrl+W`, como en WhatsApp para Windows (en la web es `Esc`, y también vale) |
 
 La ventana recuerda dónde la dejaste: tamaño, posición y si estaba maximizada. Si ese monitor ya no
 está, Windows la trae a uno que sí. En Windows 11, al pasar el ratón por el botón de maximizar sale el
@@ -60,7 +61,7 @@ ventana o el icono de la bandeja. Se guarda en `%LOCALAPPDATA%\Cryptwire\setting
 | Tono de los mensajes y de las llamadas | Ajustes › Avisos: el de la piel, ninguno o un archivo tuyo (WAV, MP3, WMA, M4A, AAC o FLAC; 10 MB como mucho). Se guarda una copia en `%LOCALAPPDATA%\Cryptwire\tonos` |
 | No oír dos tonos | Apaga los de WhatsApp: en WhatsApp, Ajustes › Notificaciones › Sonidos y Tono de llamada |
 | Tu fondo en la conversación | Ajustes › Fondo: se guarda una copia girada como la ves, reducida a 3840 px y sin los datos de la foto. «Oscurecer» para leer bien encima |
-| Avisos en pantalla | Salen en la esquina con los colores de la piel; pulsar uno abre ese chat. No salen si estás en Cryptwire o con algo a pantalla completa. Se pueden apagar y dejar solo el tono |
+| Avisos en pantalla | Salen en la esquina con los colores de la piel y la foto del contacto (se pide solo a los servidores de WhatsApp; sin foto, su inicial); pulsar uno abre ese chat. No salen si estás en Cryptwire o con algo a pantalla completa. Se pueden apagar y dejar solo el tono |
 | Seguir recibiendo avisos con la ventana cerrada | Cerrar la deja en la bandeja (se puede cambiar en Ajustes). Clic en el icono para volver; clic derecho › Salir para cerrar del todo |
 | Arrancar con Windows | Ajustes › Sistema. Arranca en la bandeja, sin ventana |
 | Widgets | De serie, una barra fina bajo la conversación: enlace, Sigilo, Velo, sin leer y reloj. En Ajustes › Widgets, panel a la derecha o ninguno; `F9` rota entre los tres. Con la ventana estrecha (menos de 1100 px), el panel pasa a barra |

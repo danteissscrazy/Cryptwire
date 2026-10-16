@@ -22,7 +22,8 @@ public enum NotificationKind
 /// La etiqueta del aviso. Los que llegan por <see cref="NotificationBridgeScript"/> la traen marcada,
 /// y así se sabe cuáles son llamadas.
 /// </param>
-public sealed record IncomingNotification(string Origin, string Title, string Body, string? Tag = null)
+/// <param name="IconUri">La foto del chat que pone WhatsApp; ver <see cref="NotificationIcon"/>.</param>
+public sealed record IncomingNotification(string Origin, string Title, string Body, string? Tag = null, string? IconUri = null)
 {
     public NotificationKind Kind =>
         NotificationBridgeScript.IsCallTag(Tag) ? NotificationKind.Call : NotificationKind.Message;

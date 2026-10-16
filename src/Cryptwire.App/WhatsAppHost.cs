@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using Cryptwire.Core;
 using Cryptwire.Core.Navigation;
 using Cryptwire.Core.Notifications;
@@ -64,6 +65,30 @@ internal sealed class WhatsAppHost(
     }
 
     public void Reload() => core?.Reload();
+
+    /// <summary>
+    /// Cierra el chat abierto, como Ctrl+W en WhatsApp para Windows. WhatsApp Web cierra el chat con Esc, así
+    /// que se le pulsa Esc de verdad (como si fuera el teclado, por el protocolo de depuración del propio
+    /// WebView2, sin puerto abierto): si hay un menú o una foto abiertos, Esc los cierra primero, igual que en la web.
+    /// </summary>
+    public async Task CloseChatAsync()
+    {
+        if (core is null)
+        {
+            return;
+        }
+
+        const string key = "\"key\":\"Escape\",\"code\":\"Escape\",\"windowsVirtualKeyCode\":27,\"nativeVirtualKeyCode\":27";
+        try
+        {
+            await core.CallDevToolsProtocolMethodAsync("Input.dispatchKeyEvent", "{\"type\":\"rawKeyDown\"," + key + "}");
+            await core.CallDevToolsProtocolMethodAsync("Input.dispatchKeyEvent", "{\"type\":\"keyUp\"," + key + "}");
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or COMException)
+        {
+            // El navegador se está cerrando: no hay chat que cerrar.
+        }
+    }
 
     private static void Harden(CoreWebView2 core)
     {

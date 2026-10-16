@@ -108,6 +108,7 @@ public partial class App : Application
         main.ShowWidgets(widgets);
         main.WidgetModeRequested += async (_, _) =>
             await skinController.UpdateAsync(s => s with { Widgets = WidgetLayout.Next(s.Widgets) }, refresh: false);
+        main.CloseChatRequested += async (_, _) => await host.CloseChatAsync();
         main.SettingsRequested += (_, _) => ShowSettings();
         main.HideOnClose = () => skinController.Settings.CloseToTray;
         main.HiddenToTray += async (_, _) => await HintTrayOnceAsync(toasts);

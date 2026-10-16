@@ -18,4 +18,7 @@ public sealed record Toast(string Key, NotificationKind Kind, string Title, stri
 
     /// <summary>Lo has cerrado tú, o se ha ido solo pasado su tiempo.</summary>
     public Action? Dismissed { get; init; }
+
+    /// <summary>La foto del chat, si WhatsApp la manda y vale (<see cref="NotificationIcon"/>); si no, la inicial.</summary>
+    public string? IconUri { get; init; }
 }

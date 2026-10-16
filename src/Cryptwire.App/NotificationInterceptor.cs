@@ -22,7 +22,7 @@ internal sealed class NotificationInterceptor(NotificationRouter router)
         try
         {
             key = router.Handle(
-                new IncomingNotification(e.SenderOrigin, notification.Title, notification.Body, notification.Tag),
+                new IncomingNotification(e.SenderOrigin, notification.Title, notification.Body, notification.Tag, notification.IconUri),
                 clicked: () => Report(notification.ReportClicked),
                 dismissed: () => Report(notification.ReportClosed));
         }

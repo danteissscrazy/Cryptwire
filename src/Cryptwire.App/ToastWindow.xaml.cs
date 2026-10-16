@@ -21,11 +21,13 @@ internal sealed partial class ToastWindow : Window
     private const int WsExToolWindow = 0x80;
     private const int WsExNoActivate = 0x08000000;
     private const int Blades = 12;
+    private const double PhotoSize = 31;
 
     /// <summary>Espacio fino entre letras: WPF no tiene espaciado entre caracteres y el diseño lo usa.</summary>
     private static readonly string HairSpace = char.ConvertFromUtf32(0x200A);
 
     private bool closing;
+    private Ellipse? photo;
 
     public ToastWindow(Toast toast)
     {
@@ -140,6 +142,19 @@ internal sealed partial class ToastWindow : Window
         BodyText.Text = toast.Body;
         Title = $"Cryptwire · {toast.Title}";
         DrawAvatar(Initial(toast.Title), isCall);
+        _ = LoadPhotoAsync(toast);
+    }
+
+    /// <summary>La foto llega después del aviso: así nunca lo retrasa, y si no llega se queda la inicial.</summary>
+    private async Task LoadPhotoAsync(Toast toast)
+    {
+        var image = await AvatarLoader.LoadAsync(toast.IconUri);
+        if (image is null || closing || !ReferenceEquals(Toast, toast) || photo is null)
+        {
+            return;
+        }
+
+        photo.Fill = new ImageBrush(image) { Stretch = Stretch.UniformToFill };
     }
 
     /// <summary>La primera letra o emoji del nombre, sin los signos que WhatsApp pone delante de un teléfono.</summary>
@@ -151,8 +166,8 @@ internal sealed partial class ToastWindow : Window
 
     /// <summary>
     /// El marco de los avatares de la piel en pequeño: doce cuchillas en espiral, como una sierra, en oro
-    /// (en carmesí si te llaman, y entonces giran), con la inicial del chat dentro. Es el mismo dibujo que
-    /// <c>tools/generar-cuchillas.py</c>. No hace falta pedir la foto: así no sale nada a internet.
+    /// (en carmesí si te llaman, y entonces giran), con la foto del chat dentro o, mientras llega o si no
+    /// hay, su inicial. Es el mismo dibujo que <c>tools/generar-cuchillas.py</c>.
     /// </summary>
     private void DrawAvatar(string initial, bool isCall)
     {
@@ -171,12 +186,6 @@ internal sealed partial class ToastWindow : Window
         Canvas.SetTop(disk, center - 17);
         Avatar.Children.Add(disk);
 
-        var edge = new Ellipse { Width = 28.6, Height = 28.6, StrokeThickness = 0.8, Opacity = 0.35 };
-        edge.SetResourceReference(Shape.StrokeProperty, "Cw.Glow");
-        Canvas.SetLeft(edge, center - 14.3);
-        Canvas.SetTop(edge, center - 14.3);
-        Avatar.Children.Add(edge);
-
         var letter = new TextBlock
         {
             Text = initial,
@@ -190,6 +199,18 @@ internal sealed partial class ToastWindow : Window
         Canvas.SetLeft(letter, center - 17);
         Canvas.SetTop(letter, center - 11);
         Avatar.Children.Add(letter);
+
+        // La foto del chat tapa la inicial cuando llega (LoadPhotoAsync); hasta entonces, transparente.
+        photo = new Ellipse { Width = PhotoSize, Height = PhotoSize };
+        Canvas.SetLeft(photo, center - (PhotoSize / 2));
+        Canvas.SetTop(photo, center - (PhotoSize / 2));
+        Avatar.Children.Add(photo);
+
+        var edge = new Ellipse { Width = PhotoSize, Height = PhotoSize, StrokeThickness = 0.8, Opacity = 0.45 };
+        edge.SetResourceReference(Shape.StrokeProperty, "Cw.Glow");
+        Canvas.SetLeft(edge, center - (PhotoSize / 2));
+        Canvas.SetTop(edge, center - (PhotoSize / 2));
+        Avatar.Children.Add(edge);
 
         if (isCall && Animated)
         {
