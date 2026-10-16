@@ -110,6 +110,34 @@ public class CssInlinerTests
         Assert.Empty(reads);
     }
 
+    [Theory]
+    [InlineData("C%3A%5CWindows%5Cweb%5Cfondo.png")]
+    [InlineData("%5C%5Cservidor%5Crecurso%5Cfondo.png")]
+    [InlineData("%2F%2Fservidor%2Ffondo.png")]
+    [InlineData("fondo.svg%00.png")]
+    [InlineData("fondo%7C.png")]
+    public void EncodedAbsolutePathsAndBadCharactersAreSkippedWithoutCrashing(string reference)
+    {
+        var css = $"a {{ background: url(\"{reference}\"); }}";
+
+        var result = Inline(css);
+
+        Assert.Equal(css, result.Css);
+        Assert.Equal([reference], result.Skipped);
+        Assert.Empty(reads);
+    }
+
+    [Fact]
+    public void AFileThatCannotBeReadIsSkippedWithoutCrashing()
+    {
+        var css = """a { background: url("fondo.svg"); }""";
+
+        var result = CssInliner.Inline(css, ThemeDir, _ => throw new UnauthorizedAccessException());
+
+        Assert.Equal(css, result.Css);
+        Assert.Equal(["fondo.svg"], result.Skipped);
+    }
+
     [Fact]
     public void MissingFilesAreReportedAndLeftAlone()
     {

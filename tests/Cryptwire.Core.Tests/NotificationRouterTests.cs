@@ -4,16 +4,18 @@ namespace Cryptwire.Core.Tests;
 
 public class NotificationRouterTests
 {
+    private const string WhatsApp = "https://web.whatsapp.com";
+
     private readonly FakeSoundPlayer sound = new();
     private readonly FakeToastService toast = new();
-    private readonly IncomingNotification message = new("Chat de prueba", "Hola");
+    private readonly IncomingNotification message = new(WhatsApp, "Chat de prueba", "Hola");
 
     [Fact]
     public void PlaysTheSkinToneAndShowsTheNotice()
     {
         var router = new NotificationRouter(sound, toast, @"C:\cryptwire\tono.wav");
 
-        router.Handle(message);
+        Assert.True(router.Handle(message));
 
         Assert.Equal([@"C:\cryptwire\tono.wav"], sound.Played);
         Assert.Equal([message], toast.Shown);
@@ -27,7 +29,7 @@ public class NotificationRouterTests
     {
         var router = new NotificationRouter(sound, toast, tonePath);
 
-        router.Handle(message);
+        Assert.True(router.Handle(message));
 
         Assert.Empty(sound.Played);
         Assert.Equal([message], toast.Shown);
@@ -43,6 +45,21 @@ public class NotificationRouterTests
 
         Assert.Equal(2, sound.Played.Count);
         Assert.Equal(2, toast.Shown.Count);
+    }
+
+    [Theory]
+    [InlineData("https://example.com")]
+    [InlineData("https://web.whatsapp.com.evil.example")]
+    [InlineData("http://web.whatsapp.com")]
+    [InlineData("")]
+    public void NoticesFromAnyoneElseAreDropped(string origin)
+    {
+        var router = new NotificationRouter(sound, toast, "tono.wav");
+
+        Assert.False(router.Handle(message with { Origin = origin }));
+
+        Assert.Empty(sound.Played);
+        Assert.Empty(toast.Shown);
     }
 
     [Fact]

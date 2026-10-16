@@ -74,12 +74,23 @@ public static partial class CssInliner
         var end = reference.IndexOfAny(['?', '#']);
         var relative = Uri.UnescapeDataString(end >= 0 ? reference[..end] : reference);
 
-        if (!MimeTypes.TryGetValue(Path.GetExtension(relative), out var mime))
+        // Una piel mal hecha (o hecha con mala idea) se salta, nunca tumba la app.
+        if (relative.IndexOfAny(Path.GetInvalidPathChars()) >= 0
+            || !MimeTypes.TryGetValue(Path.GetExtension(relative), out var mime))
         {
             return null;
         }
 
-        var fullPath = Path.GetFullPath(Path.Combine(root, relative));
+        string fullPath;
+        try
+        {
+            fullPath = Path.GetFullPath(Path.Combine(root, relative));
+        }
+        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return null;
+        }
+
         var fromRoot = Path.GetRelativePath(root, fullPath);
         if (fromRoot == ".." || fromRoot.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)
             || Path.IsPathRooted(fromRoot))
@@ -87,7 +98,16 @@ public static partial class CssInliner
             return null;
         }
 
-        var bytes = readFile(fullPath);
+        byte[]? bytes;
+        try
+        {
+            bytes = readFile(fullPath);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+
         return bytes is null ? null : $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
     }
 

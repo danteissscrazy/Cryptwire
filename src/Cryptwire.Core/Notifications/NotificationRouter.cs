@@ -1,3 +1,5 @@
+using Cryptwire.Core.Navigation;
+
 namespace Cryptwire.Core.Notifications;
 
 /// <summary>
@@ -6,9 +8,15 @@ namespace Cryptwire.Core.Notifications;
 /// </summary>
 public sealed class NotificationRouter(ISoundPlayer soundPlayer, IToastService toastService, string? tonePath)
 {
-    public void Handle(IncomingNotification notification)
+    /// <returns>True si el aviso se ha mostrado; false si se descarta porque no viene de WhatsApp Web.</returns>
+    public bool Handle(IncomingNotification notification)
     {
         ArgumentNullException.ThrowIfNull(notification);
+
+        if (!NavigationPolicy.IsWhatsApp(notification.Origin))
+        {
+            return false;
+        }
 
         if (!string.IsNullOrWhiteSpace(tonePath))
         {
@@ -16,5 +24,6 @@ public sealed class NotificationRouter(ISoundPlayer soundPlayer, IToastService t
         }
 
         toastService.Show(notification);
+        return true;
     }
 }

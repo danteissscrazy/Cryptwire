@@ -11,9 +11,11 @@ public static class SkinScript
     public const string StyleElementId = "cryptwire-skin";
 
     /// <summary>
-    /// Script para ejecutar al crearse cada documento. Pone el estilo en cuanto existe el árbol y
-    /// lo vuelve a mover al final al terminar de cargar, para ganar en cascada a los estilos de la
-    /// web. Solo actúa en el documento principal de WhatsApp Web, nunca en marcos ni en otras webs.
+    /// Script para ejecutar al crearse cada documento. Pone el estilo en cuanto existe el árbol y lo
+    /// vuelve a mover al final del <c>&lt;head&gt;</c> al terminar el HTML. La web sigue añadiendo hojas
+    /// de estilo después, así que la piel no gana la cascada por posición: sus reglas tienen que ganar
+    /// por especificidad o con <c>!important</c>.
+    /// Solo actúa en el documento principal de WhatsApp Web, nunca en marcos ni en otras webs.
     /// </summary>
     public static string Apply(string css)
     {

@@ -4,6 +4,7 @@ using System.Windows;
 using Cryptwire.Core;
 using Cryptwire.Core.Navigation;
 using Cryptwire.Core.Notifications;
+using Cryptwire.Core.Permissions;
 using Cryptwire.Core.Skins;
 using Microsoft.Web.WebView2.Core;
 
@@ -29,7 +30,11 @@ public partial class App : Application
             new SoundPlayer(),
             new ToastService(window),
             Path.Combine(themeDir, "tono.wav"));
-        var host = new WhatsAppHost(window.WebView, paths, new NavigationPolicy(), router, LoadSkinCss(themeDir));
+        var host = new WhatsAppHost(
+            window.WebView, paths, new NavigationPolicy(), new PermissionPolicy(), router, LoadSkinCss(themeDir));
+
+        host.EngineStopped += (_, _) =>
+            Fail(window, "El motor del navegador se ha cerrado. Vuelve a abrir Cryptwire.");
 
         window.Loaded += async (_, _) =>
         {
@@ -39,38 +44,47 @@ public partial class App : Application
             }
             catch (WebView2RuntimeNotFoundException)
             {
-                MessageBox.Show(
-                    window,
-                    "Cryptwire necesita el runtime de Microsoft Edge WebView2, que no está instalado.",
-                    "Cryptwire",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                Shutdown(1);
+                Fail(window, "Cryptwire necesita el runtime de Microsoft Edge WebView2, que no está instalado.");
+            }
+            catch (Exception ex)
+            {
+                Fail(window, $"Cryptwire no ha podido arrancar WhatsApp Web.\n\n{ex.Message}");
             }
         };
         window.Show();
     }
 
-    /// <summary>Lee el CSS de la piel e incrusta sus fondos y fuentes. Sin piel, la web se ve tal cual.</summary>
+    private void Fail(Window window, string message)
+    {
+        MessageBox.Show(window, message, "Cryptwire", MessageBoxButton.OK, MessageBoxImage.Error);
+        Shutdown(1);
+    }
+
+    /// <summary>
+    /// Lee el CSS de la piel e incrusta sus fondos y fuentes. Si la piel falta o no se puede leer,
+    /// la web se ve tal cual: una piel rota nunca impide abrir WhatsApp.
+    /// </summary>
     private static string LoadSkinCss(string themeDir)
     {
         var cssPath = Path.Combine(themeDir, "skin.css");
-        if (!File.Exists(cssPath))
+        try
         {
-            Trace.TraceWarning($"Cryptwire: no hay piel en {cssPath}.");
+            var inlined = CssInliner.Inline(
+                File.ReadAllText(cssPath),
+                themeDir,
+                path => File.Exists(path) ? File.ReadAllBytes(path) : null);
+
+            foreach (var reference in inlined.Skipped)
+            {
+                Trace.TraceWarning($"Cryptwire: la piel apunta a '{reference}' y no se ha podido incrustar.");
+            }
+
+            return inlined.Css;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Trace.TraceWarning($"Cryptwire: no se ha podido leer la piel ({ex.GetType().Name}); se muestra la web sin piel.");
             return string.Empty;
         }
-
-        var inlined = CssInliner.Inline(
-            File.ReadAllText(cssPath),
-            themeDir,
-            path => File.Exists(path) ? File.ReadAllBytes(path) : null);
-
-        foreach (var reference in inlined.Skipped)
-        {
-            Trace.TraceWarning($"Cryptwire: la piel apunta a '{reference}' y no se ha podido incrustar.");
-        }
-
-        return inlined.Css;
     }
 }
