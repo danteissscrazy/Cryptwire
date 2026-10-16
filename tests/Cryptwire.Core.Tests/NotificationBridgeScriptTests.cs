@@ -216,6 +216,20 @@ public class NotificationBridgeScriptTests
     }
 
     [Fact]
+    public void InstallingTwiceThenRemovingLeavesNoBridge()
+    {
+        // Se instala al crearse el documento y otra vez sobre la página abierta: quitarlo una vez basta.
+        var engine = Load();
+        engine.Execute(NotificationBridgeScript.Install());
+
+        engine.Execute(NotificationBridgeScript.Remove());
+        engine.Execute("registration.showNotification('Vergil', callOptions);");
+
+        Assert.Equal(1, Count(engine, "native"));
+        Assert.Equal(0, Count(engine, "created"));
+    }
+
+    [Fact]
     public void RemoveBringsBackTheOriginals()
     {
         var engine = Load();
@@ -229,6 +243,17 @@ public class NotificationBridgeScriptTests
         engine.Execute(NotificationBridgeScript.Install());
         engine.Execute("registration.showNotification('Vergil', callOptions);");
         Assert.Equal(1, Count(engine, "created"));
+    }
+
+    [Fact]
+    public void RemoveClosesTheNoticesStillShowing()
+    {
+        var engine = Load();
+        engine.Execute("registration.showNotification('Vergil', callOptions);");
+
+        engine.Execute(NotificationBridgeScript.Remove());
+
+        Assert.True(engine.Evaluate("created[0].closed").AsBoolean());
     }
 
     [Fact]

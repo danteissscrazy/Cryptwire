@@ -6,7 +6,8 @@ namespace Cryptwire.Core.Notifications;
 /// <summary>
 /// El nombre de un chat tal como llega en el título de un aviso, y cuándo dos nombres son el mismo chat.
 /// WhatsApp mete a veces marcas invisibles de dirección del texto (alrededor de un teléfono, por ejemplo)
-/// y el mismo acento puede llegar en dos formas Unicode: nada de eso cambia de qué chat se trata.
+/// y el mismo acento puede llegar en dos formas Unicode: nada de eso cambia de qué chat se trata. Un
+/// nombre con medio emoji (un sustituto UTF-16 suelto) tampoco rompe nada.
 /// </summary>
 public static class ChatName
 {
@@ -20,7 +21,7 @@ public static class ChatName
             return null;
         }
 
-        var clean = name.Normalize(NormalizationForm.FormC).Trim();
+        var clean = SafeText.WithoutLoneSurrogates(name).Normalize(NormalizationForm.FormC).Trim();
         var text = new StringInfo(clean);
         if (text.LengthInTextElements > MaxLength)
         {
@@ -46,7 +47,7 @@ public static class ChatName
 
         var key = new StringBuilder(name.Length);
         var pendingSpace = false;
-        foreach (var rune in name.Normalize(NormalizationForm.FormC).EnumerateRunes())
+        foreach (var rune in SafeText.WithoutLoneSurrogates(name).Normalize(NormalizationForm.FormC).EnumerateRunes())
         {
             var category = Rune.GetUnicodeCategory(rune);
             if (category is UnicodeCategory.Format or UnicodeCategory.Control)

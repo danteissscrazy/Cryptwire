@@ -1,18 +1,32 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Cryptwire.Core.Settings;
 
 /// <summary>
 /// Guarda los ajustes en un JSON de la carpeta del usuario. Un fichero roto o ilegible nunca impide
-/// arrancar: se usan los ajustes de por defecto. Uno legible pero con huecos (un <c>null</c> donde va un
-/// tono) se completa con los valores de serie.
+/// arrancar: se usan los ajustes de por defecto, y el roto se aparta como <c>settings.json.roto</c> antes
+/// de que el siguiente guardado lo pise. Uno legible pero con huecos (un <c>null</c> donde va un valor,
+/// una coma de más, un comentario) se lee igual y lo que falta toma su valor de serie.
 /// </summary>
 public sealed class JsonSettingsStore(string path) : ISettingsStore
 {
+    public const string BrokenSuffix = ".roto";
+
     private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+    };
+
+    private static readonly JsonNodeOptions NodeOptions = new() { PropertyNameCaseInsensitive = true };
+
+    private static readonly JsonDocumentOptions DocumentOptions = new()
+    {
+        AllowTrailingCommas = true,
+        CommentHandling = JsonCommentHandling.Skip,
     };
 
     public AppSettings Load()
@@ -24,9 +38,16 @@ public sealed class JsonSettingsStore(string path) : ISettingsStore
                 return new AppSettings();
             }
 
-            return (JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path), Options) ?? new AppSettings()).Normalized();
+            var node = JsonNode.Parse(File.ReadAllText(path), NodeOptions, DocumentOptions);
+            DropNulls(node);
+            return (node?.Deserialize<AppSettings>(Options) ?? new AppSettings()).Normalized();
         }
-        catch (Exception e) when (e is JsonException or IOException or UnauthorizedAccessException)
+        catch (JsonException)
+        {
+            SetAside();
+            return new AppSettings();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return new AppSettings();
         }
@@ -43,5 +64,46 @@ public sealed class JsonSettingsStore(string path) : ISettingsStore
         var temp = path + ".tmp";
         File.WriteAllText(temp, JsonSerializer.Serialize(settings, Options));
         File.Move(temp, path, overwrite: true);
+    }
+
+    /// <summary>
+    /// Quita los <c>null</c> de los objetos: así cada ajuste que falte toma su valor de serie en vez de
+    /// tumbar la lectura entera (un <c>bool</c> no admite <c>null</c>). Los de las listas los quita
+    /// <see cref="AppSettings.Normalized"/>.
+    /// </summary>
+    private static void DropNulls(JsonNode? node)
+    {
+        if (node is JsonObject obj)
+        {
+            foreach (var name in obj.Where(p => p.Value is null).Select(p => p.Key).ToList())
+            {
+                obj.Remove(name);
+            }
+
+            foreach (var child in obj)
+            {
+                DropNulls(child.Value);
+            }
+        }
+        else if (node is JsonArray array)
+        {
+            foreach (var item in array)
+            {
+                DropNulls(item);
+            }
+        }
+    }
+
+    /// <summary>Guarda una copia del fichero roto: tus tonos y reglas siguen ahí para arreglarlo a mano.</summary>
+    private void SetAside()
+    {
+        try
+        {
+            File.Copy(path, path + BrokenSuffix, overwrite: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Sin copia: los ajustes de serie siguen valiendo para arrancar.
+        }
     }
 }

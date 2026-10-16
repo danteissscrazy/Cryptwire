@@ -7,13 +7,14 @@ namespace Cryptwire.Core.Tests;
 public class ToneResolverTests
 {
     private const string WhatsApp = "https://web.whatsapp.com";
+    private const string Tones = @"C:\tonos";
     private static readonly Theme Skin = new("relicario", "Relicario", @"C:\pieles\relicario");
 
     private static readonly IncomingNotification FromTrish = new(WhatsApp, "Trish", "Te dejo la pizza");
     private static readonly IncomingNotification CallFromTrish = new(WhatsApp, "Trish", "Llamada entrante", NotificationBridgeScript.CallTagPrefix + "1");
 
     private static string? Resolve(AppSettings settings, IncomingNotification notification, Theme? theme = null) =>
-        new ToneResolver(() => settings, () => theme ?? Skin).Resolve(notification);
+        new ToneResolver(() => settings, () => theme ?? Skin, Tones, _ => true).Resolve(notification);
 
     [Fact]
     public void ByDefaultTheSkinTonesSound()
@@ -85,14 +86,69 @@ public class ToneResolverTests
     [Fact]
     public void WithoutASkinAndWithoutYourTonesNothingSounds()
     {
-        Assert.Null(new ToneResolver(() => new AppSettings(), () => null).Resolve(FromTrish));
+        Assert.Null(new ToneResolver(() => new AppSettings(), () => null, Tones, _ => true).Resolve(FromTrish));
+    }
+
+    [Fact]
+    public void ASkinWithoutCallToneRingsWithItsMessageTone()
+    {
+        var resolver = new ToneResolver(() => new AppSettings(), () => Skin, Tones, path => !path.EndsWith("llamada.wav", StringComparison.Ordinal));
+
+        Assert.Equal(@"C:\pieles\relicario\tono.wav", resolver.Resolve(CallFromTrish));
+    }
+
+    [Fact]
+    public void ASkinWithoutTonesStaysSilent()
+    {
+        Assert.Null(new ToneResolver(() => new AppSettings(), () => Skin, Tones, _ => false).Resolve(CallFromTrish));
+    }
+
+    [Fact]
+    public void AToneThatIsNoLongerThereFallsBackToTheNextOne()
+    {
+        var settings = new AppSettings { MessageTone = ToneChoice.FromFile(@"C:\tonos\borrado.wav") }
+            .WithToneRule("Trish", @"C:\tonos\tambien-borrado.wav", null);
+        var resolver = new ToneResolver(() => settings, () => Skin, Tones, path => !path.Contains("borrado", StringComparison.Ordinal));
+
+        Assert.Equal(@"C:\pieles\relicario\tono.wav", resolver.Resolve(FromTrish));
+    }
+
+    [Theory]
+    [InlineData(@"\\servidor\tonos\trish.wav")]
+    [InlineData(@"D:\otro\trish.wav")]
+    [InlineData(@"C:\tonos\..\Windows\Media\tada.wav")]
+    [InlineData(@"C:\tonos-otros\trish.wav")]
+    [InlineData(@"tonos\trish.wav")]
+    [InlineData("C:\\tonos\\tri\0sh.wav")]
+    public void YourTonesOnlyCountFromTheToneFolderAndAreNeverLookedUpElsewhere(string path)
+    {
+        var looked = new List<string>();
+        var settings = new AppSettings { CallTone = ToneChoice.FromFile(path) }.WithToneRule("Trish", path, path);
+        var resolver = new ToneResolver(() => settings, () => Skin, Tones, p =>
+        {
+            looked.Add(p);
+            return true;
+        });
+
+        Assert.Equal(@"C:\pieles\relicario\tono.wav", resolver.Resolve(FromTrish));
+        Assert.Equal(@"C:\pieles\relicario\llamada.wav", resolver.Resolve(CallFromTrish));
+        Assert.DoesNotContain(path, looked);
+    }
+
+    [Fact]
+    public void SilentStillWinsOverAMissingFile()
+    {
+        var settings = new AppSettings { MessageTone = ToneChoice.Silent }.WithToneRule("Trish", @"C:\tonos\borrado.wav", null);
+        var resolver = new ToneResolver(() => settings, () => Skin, Tones, path => !path.Contains("borrado", StringComparison.Ordinal));
+
+        Assert.Null(resolver.Resolve(FromTrish));
     }
 
     [Fact]
     public void TheSettingsAreAskedOnEveryNotice()
     {
         var settings = new AppSettings();
-        var resolver = new ToneResolver(() => settings, () => Skin);
+        var resolver = new ToneResolver(() => settings, () => Skin, Tones, _ => true);
 
         var before = resolver.Resolve(FromTrish);
         settings = settings with { MessageTone = ToneChoice.FromFile(@"C:\tonos\nuevo.wav") };

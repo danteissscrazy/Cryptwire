@@ -17,7 +17,7 @@ internal static class DesktopNotificationState
         {
             1 => DesktopState.Away,       // QUNS_NOT_PRESENT: bloqueado o salvapantallas
             2 or 3 or 4 or 7 => DesktopState.Busy, // pantalla completa, Direct3D, presentación, app a pantalla completa
-            6 => DesktopState.QuietTime,  // QUNS_QUIET_TIME: no molestar
+            6 => DesktopState.QuietTime,  // QUNS_QUIET_TIME: la primera hora tras instalar o actualizar Windows
             _ => DesktopState.Available,  // QUNS_ACCEPTS_NOTIFICATIONS
         };
     }

@@ -9,7 +9,10 @@ public enum DesktopState
     /// <summary>Hay algo a pantalla completa: un juego, una presentación, un vídeo.</summary>
     Busy,
 
-    /// <summary>No molestar o las horas tranquilas de Windows.</summary>
+    /// <summary>
+    /// Las «horas tranquilas» de Windows: la primera hora tras instalarlo o actualizarlo. El «No molestar»
+    /// de Windows 11 no se ve desde aquí: Windows no se lo cuenta a las apps por esta vía.
+    /// </summary>
     QuietTime,
 
     /// <summary>Pantalla bloqueada o salvapantallas: nadie ve el aviso.</summary>
@@ -27,8 +30,8 @@ public sealed record Delivery(bool PlayTone, bool ShowToast);
 
 /// <summary>
 /// Cuándo suena un aviso y cuándo se ve. Un aviso en pantalla solo sale si puedes verlo y no estás ya en
-/// Cryptwire. Un mensaje no suena con No molestar ni con algo a pantalla completa; una llamada sí suena
-/// a pantalla completa, porque se pierde si no la oyes, pero respeta No molestar.
+/// Cryptwire. Un mensaje no suena en las horas tranquilas de Windows ni con algo a pantalla completa; una
+/// llamada sí suena a pantalla completa, porque se pierde si no la oyes, pero respeta las horas tranquilas.
 /// </summary>
 public static class DeliveryPolicy
 {

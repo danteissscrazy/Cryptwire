@@ -37,6 +37,7 @@ public partial class MainWindow : Window
     private SystemMenu? menu;
     private WindowState shownState = WindowState.Normal;
     private bool exiting;
+    private bool closed;
     private bool startingHidden;
     private int unread = -1;
 
@@ -44,6 +45,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         SettingsLabel.Text = Spaced("ajustes");
+        Closed += (_, _) => closed = true;
         StateChanged += (_, _) => FitToState();
         FitToState();
     }
@@ -59,6 +61,9 @@ public partial class MainWindow : Window
 
     /// <summary>La ventana se acaba de esconder en la bandeja.</summary>
     internal event EventHandler? HiddenToTray;
+
+    /// <summary>Cerrada de verdad: no se puede volver a enseñar.</summary>
+    internal bool IsClosed => closed;
 
     /// <summary>
     /// Conecta los atajos y el menú con las pieles. WebView2 pasa a la ventana las teclas de función
@@ -86,6 +91,12 @@ public partial class MainWindow : Window
     /// <summary>Trae Cryptwire delante: desde la bandeja, minimizada o detrás de otra ventana.</summary>
     internal void BringToFront()
     {
+        if (closed)
+        {
+            // Cerrada de verdad: la app ya está terminando.
+            return;
+        }
+
         if (startingHidden)
         {
             // La has sacado de la bandeja antes de que acabara de cargar: se queda, como una ventana normal.
@@ -139,7 +150,10 @@ public partial class MainWindow : Window
     internal void Exit()
     {
         exiting = true;
-        Close();
+        if (!closed)
+        {
+            Close();
+        }
     }
 
     /// <summary>Los sin leer en el botón de la barra de tareas: un círculo del color de alerta con el número.</summary>

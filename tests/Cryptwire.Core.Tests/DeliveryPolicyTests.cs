@@ -40,7 +40,7 @@ public class DeliveryPolicyTests
     [Theory]
     [InlineData(NotificationKind.Message)]
     [InlineData(NotificationKind.Call)]
-    public void DoNotDisturbSilencesEverything(NotificationKind kind)
+    public void QuietTimeSilencesEverything(NotificationKind kind)
     {
         Assert.Equal(new Delivery(PlayTone: false, ShowToast: false), Decide(kind, DesktopState.QuietTime));
     }

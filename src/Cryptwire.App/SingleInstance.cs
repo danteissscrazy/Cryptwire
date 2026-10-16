@@ -27,8 +27,15 @@ internal sealed class SingleInstance : IDisposable
     /// <summary>Esta es la primera: la que se queda.</summary>
     public bool IsFirst => owned;
 
-    /// <summary>Desde la segunda: pide a la primera que se enseñe.</summary>
-    public void AskFirstToShow() => showSignal.Set();
+    /// <summary>
+    /// Desde la segunda: pide a la primera que se enseñe. Windows solo deja ponerse delante a quien acaba
+    /// de recibir tu clic: esta, que es la que has abierto, le cede ese permiso antes de avisarla.
+    /// </summary>
+    public void AskFirstToShow()
+    {
+        AllowSetForegroundWindow(AnyProcess);
+        showSignal.Set();
+    }
 
     /// <summary>Desde la segunda: pide a la primera que se cierre del todo.</summary>
     public void AskFirstToExit() => exitSignal.Set();
@@ -56,4 +63,10 @@ internal sealed class SingleInstance : IDisposable
         showSignal.Dispose();
         exitSignal.Dispose();
     }
+
+    private const int AnyProcess = -1;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static extern bool AllowSetForegroundWindow(int processId);
 }

@@ -17,6 +17,7 @@ internal sealed partial class SettingsWindow : Window
     {
         InitializeComponent();
         this.model = model;
+        model.DialogOwner = this;
         DataContext = model;
         PreviewKeyDown += (_, e) =>
         {

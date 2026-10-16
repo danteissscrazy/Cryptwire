@@ -20,13 +20,13 @@ public static class UnreadCount
         }
 
         var close = title.IndexOf(')', StringComparison.Ordinal);
-        if (close < 2 || close > 8)
+        if (close < 2)
         {
             return 0;
         }
 
         var digits = title[1..close].TrimEnd('+');
-        return digits.Length > 0 && digits.All(char.IsAsciiDigit)
+        return digits.Length > 0
             && int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var count)
             ? count
             : 0;

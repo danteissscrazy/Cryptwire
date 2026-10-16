@@ -39,11 +39,7 @@ internal sealed class SettingsViewModel : INotifyPropertyChanged
         this.recent = recent;
         this.paths = paths;
         library = new ToneLibrary(paths.TonesDir);
-        dimDelay.Tick += (_, _) =>
-        {
-            dimDelay.Stop();
-            Update(s => s.Wallpaper is null ? s : s with { Wallpaper = s.Wallpaper with { Dim = wallpaperDim } });
-        };
+        dimDelay.Tick += (_, _) => SaveDim();
 
         SelectSkinCommand = new RelayCommand(p => _ = p is SkinOption skin ? skins.SelectAsync(skin.Id) : Task.CompletedTask);
         SetMessageToneCommand = new RelayCommand(p => SetGeneralTone(p as string, call: false));
@@ -229,9 +225,17 @@ internal sealed class SettingsViewModel : INotifyPropertyChanged
     public void Detach()
     {
         skins.StateChanged -= OnStateChanged;
-        dimDelay.Stop();
+        if (dimDelay.IsEnabled)
+        {
+            // Lo último que moviste en el deslizador también cuenta, aunque cierres enseguida.
+            SaveDim();
+        }
+
         preview.StopRinging("prueba");
     }
+
+    /// <summary>Quién es el dueño de los selectores de ficheros: con dueño, no se puede abrir otro encima.</summary>
+    public System.Windows.Window? DialogOwner { get; set; }
 
     private static string SourceKey(ToneChoice choice) => choice.Source switch
     {
@@ -272,6 +276,13 @@ internal sealed class SettingsViewModel : INotifyPropertyChanged
     }
 
     private void OnStateChanged(object? sender, EventArgs e) => Reload();
+
+    private void SaveDim()
+    {
+        dimDelay.Stop();
+        var dim = wallpaperDim;
+        Update(s => s.Wallpaper is null ? s : s with { Wallpaper = s.Wallpaper with { Dim = dim } });
+    }
 
     private void Reload()
     {
@@ -321,7 +332,7 @@ internal sealed class SettingsViewModel : INotifyPropertyChanged
     {
         var sample = new IncomingNotification(WhatsAppOrigin, string.Empty, string.Empty, call ? NotificationBridgeScript.CallTagPrefix : null);
         var settings = skins.Settings with { ToneRules = [] };
-        Play(new ToneResolver(() => settings, () => skins.Active).Resolve(sample));
+        Play(new ToneResolver(() => settings, () => skins.Active, paths.TonesDir).Resolve(sample));
     }
 
     private void Play(string? file)
@@ -390,7 +401,7 @@ internal sealed class SettingsViewModel : INotifyPropertyChanged
             Filter = "Sonidos|" + string.Join(';', ToneLibrary.Extensions.Select(e => "*" + e)),
             CheckFileExists = true,
         };
-        if (dialog.ShowDialog() != true)
+        if (dialog.ShowDialog(DialogOwner) != true)
         {
             return null;
         }
@@ -416,7 +427,7 @@ internal sealed class SettingsViewModel : INotifyPropertyChanged
             Filter = "Imágenes|*.jpg;*.jpeg;*.png;*.webp;*.bmp;*.gif;*.tif;*.tiff",
             CheckFileExists = true,
         };
-        if (dialog.ShowDialog() != true)
+        if (dialog.ShowDialog(DialogOwner) != true)
         {
             return;
         }

@@ -7,7 +7,8 @@ namespace Cryptwire.App;
 
 /// <summary>
 /// Reproduce tonos con el reproductor de WPF (WAV, MP3, WMA…): uno para los mensajes, que suena una
-/// vez, y otro para las llamadas, que se repite hasta que se calla o pasa su tope.
+/// vez, y otro para las llamadas, que se repite hasta que se calla o pasa su tope. Al acabar suelta el
+/// fichero, para que puedas editar el tono de una piel con la app abierta.
 /// </summary>
 internal sealed class SoundPlayer : ISoundPlayer
 {
@@ -18,6 +19,9 @@ internal sealed class SoundPlayer : ISoundPlayer
 
     public SoundPlayer()
     {
+        player.MediaEnded += (_, _) => player.Close();
+        player.MediaFailed += (_, _) => player.Close();
+
         // Al acabar, vuelve a empezar: así se repite el tono de llamada sin cortes de más.
         ringer.MediaEnded += (_, _) =>
         {
@@ -27,6 +31,7 @@ internal sealed class SoundPlayer : ISoundPlayer
                 ringer.Play();
             }
         };
+        ringer.MediaFailed += (_, _) => Silence();
         ringLimit.Tick += (_, _) => Silence();
     }
 
@@ -37,7 +42,7 @@ internal sealed class SoundPlayer : ISoundPlayer
             return;
         }
 
-        player.Open(new Uri(path, UriKind.Absolute));
+        player.Open(FileUri(path));
         player.Play();
     }
 
@@ -50,7 +55,7 @@ internal sealed class SoundPlayer : ISoundPlayer
         }
 
         ringing = key;
-        ringer.Open(new Uri(path, UriKind.Absolute));
+        ringer.Open(FileUri(path));
         ringer.Play();
         ringLimit.Interval = max;
         ringLimit.Start();
@@ -62,6 +67,16 @@ internal sealed class SoundPlayer : ISoundPlayer
         {
             Silence();
         }
+    }
+
+    /// <summary>
+    /// La dirección <c>file:</c> del fichero, escrita a mano: <c>new Uri(ruta)</c> leería <c>%41</c> como
+    /// «A» y cortaría en <c>#</c>, y el tono no sonaría.
+    /// </summary>
+    private static Uri FileUri(string path)
+    {
+        var escaped = path.Replace("%", "%25", StringComparison.Ordinal).Replace("#", "%23", StringComparison.Ordinal).Replace('\\', '/');
+        return new Uri(path.StartsWith(@"\\", StringComparison.Ordinal) ? "file:" + escaped : "file:///" + escaped);
     }
 
     private void Silence()

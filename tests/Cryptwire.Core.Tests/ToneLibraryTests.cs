@@ -83,9 +83,18 @@ public sealed class ToneLibraryTests : IDisposable
     [InlineData("acero. . ", "acero")]
     [InlineData("a<b>c:d|e?f*g", "a_b_c_d_e_f_g")]
     [InlineData("  ", "tono")]
+    [InlineData("tono%41", "tono_41")]
     public void TheCopyGetsAValidWindowsName(string raw, string expected)
     {
         Assert.Equal(expected, ToneLibrary.SafeBaseName(raw));
+    }
+
+    [Fact]
+    public void HalfAnEmojiInTheNameDoesNotBreakTheCopy()
+    {
+        var half = "medio" + '\uD83D' + "emoji";
+
+        Assert.Equal("medio\uFFFDemoji", ToneLibrary.SafeBaseName(half));
     }
 
     [Fact]

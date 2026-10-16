@@ -34,9 +34,10 @@ internal sealed class ToastPresenter(Window main, Action bringToFront) : IToastS
             return;
         }
 
-        while (open.Count >= MaxVisible)
+        // Sin sitio, se va el aviso más antiguo, pero nunca una llamada que sigue sonando.
+        while (open.Count >= MaxVisible && open.Find(e => e.Window.Toast.Kind != NotificationKind.Call) is { } oldest)
         {
-            Dismiss(open[0]);
+            Dismiss(oldest);
         }
 
         var window = new ToastWindow(toast);
@@ -45,7 +46,14 @@ internal sealed class ToastPresenter(Window main, Action bringToFront) : IToastS
         window.BodyClicked += (_, _) => Click(entry);
         window.CloseClicked += (_, _) => Dismiss(entry);
         window.MouseEnter += (_, _) => entry.Timer.Stop();
-        window.MouseLeave += (_, _) => entry.Restart(entry.Window.Toast.Kind == NotificationKind.Call ? Life(entry.Window.Toast) : AfterHover);
+        window.MouseLeave += (_, _) =>
+        {
+            // Uno que ya se está yendo no vuelve a contar tiempo.
+            if (!entry.Gone)
+            {
+                entry.Restart(entry.Window.Toast.Kind == NotificationKind.Call ? Life(entry.Window.Toast) : AfterHover);
+            }
+        };
         open.Add(entry);
 
         Layout();
@@ -65,25 +73,35 @@ internal sealed class ToastPresenter(Window main, Action bringToFront) : IToastS
 
     private void Click(Entry entry)
     {
-        Remove(entry);
-        bringToFront();
-        entry.Window.Toast.Clicked?.Invoke();
+        if (Remove(entry))
+        {
+            bringToFront();
+            entry.Window.Toast.Clicked?.Invoke();
+        }
     }
 
     private void Dismiss(Entry entry)
     {
-        Remove(entry);
-        entry.Window.Toast.Dismissed?.Invoke();
+        if (Remove(entry))
+        {
+            entry.Window.Toast.Dismissed?.Invoke();
+        }
     }
 
-    private void Remove(Entry entry)
+    /// <returns>True si seguía a la vista: así un aviso que ya se fue no avisa dos veces a la página.</returns>
+    private bool Remove(Entry entry)
     {
         entry.Timer.Stop();
-        if (open.Remove(entry))
+        if (entry.Gone)
         {
-            entry.Window.Leave();
-            Layout();
+            return false;
         }
+
+        entry.Gone = true;
+        open.Remove(entry);
+        entry.Window.Leave();
+        Layout();
+        return true;
     }
 
     /// <summary>El más reciente abajo del todo; los anteriores suben.</summary>
@@ -129,6 +147,9 @@ internal sealed class ToastPresenter(Window main, Action bringToFront) : IToastS
         public ToastWindow Window { get; } = window;
 
         public DispatcherTimer Timer { get; } = new();
+
+        /// <summary>Ya no está a la vista (pulsado, cerrado o sustituido): se ignora todo lo que llegue tarde.</summary>
+        public bool Gone { get; set; }
 
         public void Restart(TimeSpan after)
         {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -55,40 +56,52 @@ public sealed class ToneLibrary(string directory)
             throw new ToneImportException("No se ha podido leer ese fichero.", e);
         }
 
-        System.IO.Directory.CreateDirectory(Directory);
-        var baseName = SafeBaseName(Path.GetFileNameWithoutExtension(source));
-        var hash = SHA256.HashData(bytes);
-        for (var n = 1; ; n++)
+        try
         {
-            var name = n == 1 ? baseName : $"{baseName}-{n}";
-            var target = Path.Combine(Directory, name + extension);
-            if (!File.Exists(target))
+            System.IO.Directory.CreateDirectory(Directory);
+            var baseName = SafeBaseName(Path.GetFileNameWithoutExtension(source));
+            var hash = SHA256.HashData(bytes);
+            for (var n = 1; ; n++)
             {
-                File.WriteAllBytes(target, bytes);
-                return target;
-            }
+                var name = n == 1 ? baseName : $"{baseName}-{n}";
+                var target = Path.Combine(Directory, name + extension);
+                if (!File.Exists(target))
+                {
+                    File.WriteAllBytes(target, bytes);
+                    return target;
+                }
 
-            if (SHA256.HashData(File.ReadAllBytes(target)).AsSpan().SequenceEqual(hash))
-            {
-                return target;
+                if (SHA256.HashData(File.ReadAllBytes(target)).AsSpan().SequenceEqual(hash))
+                {
+                    return target;
+                }
             }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            throw new ToneImportException("No se ha podido guardar la copia del tono (¿disco lleno o carpeta sin permiso?).", e);
         }
     }
 
-    /// <summary>Un nombre de fichero que vale en Windows: sin caracteres prohibidos, nombres reservados ni puntos al final.</summary>
+    /// <summary>
+    /// Un nombre de fichero que vale en Windows: sin caracteres prohibidos, nombres reservados ni puntos al
+    /// final. Sin <c>%</c> (al reproducirlo, <c>%41</c> se leería como «A») ni medio emoji.
+    /// </summary>
     public static string SafeBaseName(string raw)
     {
+        ArgumentNullException.ThrowIfNull(raw);
         var invalid = Path.GetInvalidFileNameChars();
         var clean = new StringBuilder();
-        foreach (var c in raw.Normalize(NormalizationForm.FormC))
+        foreach (var c in SafeText.WithoutLoneSurrogates(raw).Normalize(NormalizationForm.FormC))
         {
-            clean.Append(invalid.Contains(c) || char.IsControl(c) ? '_' : c);
+            clean.Append(invalid.Contains(c) || char.IsControl(c) || c == '%' ? '_' : c);
         }
 
         var name = clean.ToString().Trim().TrimEnd('.', ' ');
-        if (name.Length > MaxBaseNameLength)
+        var text = new StringInfo(name);
+        if (text.LengthInTextElements > MaxBaseNameLength)
         {
-            name = name[..MaxBaseNameLength].TrimEnd('.', ' ');
+            name = text.SubstringByTextElements(0, MaxBaseNameLength).TrimEnd('.', ' ');
         }
 
         var reserved = name.Split('.')[0].ToUpperInvariant();

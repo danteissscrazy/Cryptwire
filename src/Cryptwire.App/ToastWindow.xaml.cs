@@ -146,7 +146,7 @@ internal sealed partial class ToastWindow : Window
     /// <summary>La primera letra o emoji del nombre, sin los signos que WhatsApp pone delante de un teléfono.</summary>
     private static string Initial(string title)
     {
-        var text = new StringInfo(title.Trim().TrimStart('+', '‪', '‫', '‎', '‏'));
+        var text = new StringInfo(title.Trim().TrimStart('+', '\u202A', '\u202B', '\u200E', '\u200F'));
         return text.LengthInTextElements > 0 ? text.SubstringByTextElements(0, 1).ToUpperInvariant() : "·";
     }
 

@@ -136,6 +136,49 @@ public sealed class JsonSettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void ANullWhereAYesOrNoGoesKeepsEverythingElse()
+    {
+        dir.Write(@"Cryptwire\settings.json", """{ "themeId": "relicario", "closeToTray": null, "showToasts": false, "toneRules": [{ "chat": "Trish", "messageTone": "t.wav" }] }""");
+
+        var settings = new JsonSettingsStore(SettingsPath).Load();
+
+        Assert.Equal("relicario", settings.ThemeId);
+        Assert.True(settings.CloseToTray);
+        Assert.False(settings.ShowToasts);
+        Assert.Equal([new ToneRule("Trish", "t.wav")], settings.ToneRules);
+    }
+
+    [Fact]
+    public void ACommaTooManyOrACommentAreForgiven()
+    {
+        dir.Write(@"Cryptwire\settings.json", """
+            {
+              // retocado a mano
+              "themeId": "relicario",
+              "showToasts": false,
+            }
+            """);
+
+        var settings = new JsonSettingsStore(SettingsPath).Load();
+
+        Assert.Equal("relicario", settings.ThemeId);
+        Assert.False(settings.ShowToasts);
+    }
+
+    [Fact]
+    public void ABrokenFileIsSetAsideBeforeItCanBeOverwritten()
+    {
+        const string broken = """{ "themeId": "relicario", "toneRules": [ { "chat": "Trish" """;
+        dir.Write(@"Cryptwire\settings.json", broken);
+        var store = new JsonSettingsStore(SettingsPath);
+
+        store.Load();
+        store.Save(new AppSettings());
+
+        Assert.Equal(broken, File.ReadAllText(SettingsPath + JsonSettingsStore.BrokenSuffix));
+    }
+
+    [Fact]
     public void UnknownFieldsFromANewerVersionAreIgnored()
     {
         dir.Write(@"Cryptwire\settings.json", """{ "themeId": "relicario", "toneRules": [] }""");

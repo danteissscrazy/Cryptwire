@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Cryptwire.Core.Notifications;
 using Microsoft.Web.WebView2.Core;
@@ -16,14 +17,25 @@ internal sealed class NotificationInterceptor(NotificationRouter router)
 
     private void OnNotificationReceived(object? sender, CoreWebView2NotificationReceivedEventArgs e)
     {
-        // Siempre nuestro: un aviso que el router descarte no se muestra de ninguna manera.
-        e.Handled = true;
-
         var notification = e.Notification;
-        var key = router.Handle(
-            new IncomingNotification(e.SenderOrigin, notification.Title, notification.Body, notification.Tag),
-            clicked: () => Report(notification.ReportClicked),
-            dismissed: () => Report(notification.ReportClosed));
+        string? key;
+        try
+        {
+            key = router.Handle(
+                new IncomingNotification(e.SenderOrigin, notification.Title, notification.Body, notification.Tag),
+                clicked: () => Report(notification.ReportClicked),
+                dismissed: () => Report(notification.ReportClosed));
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Si Cryptwire no sabe tratarlo, que lo enseñe WebView2 a su manera: un aviso nunca se pierde.
+            // Solo el tipo de error: nunca el contenido del aviso.
+            Trace.TraceWarning($"Cryptwire: aviso no tratado ({ex.GetType().Name}); lo enseña WebView2.");
+            return;
+        }
+
+        // Siempre nuestro: un aviso que el router descarte (no viene de WhatsApp) no se muestra de ninguna manera.
+        e.Handled = true;
         if (key is null)
         {
             return;

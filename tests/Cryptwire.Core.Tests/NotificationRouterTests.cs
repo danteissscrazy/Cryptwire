@@ -19,7 +19,7 @@ public class NotificationRouterTests
     private DeliveryContext context = new(ToastsOn: true, WindowActive: false, DesktopState.Available);
 
     private NotificationRouter Router() =>
-        new(sound, toast, new ToneResolver(() => settings, () => theme), () => context);
+        new(sound, toast, new ToneResolver(() => settings, () => theme, @"C:\tonos", _ => true), () => context);
 
     [Fact]
     public void AMessagePlaysTheSkinToneOnceAndShowsTheNotice()

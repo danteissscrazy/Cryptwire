@@ -100,16 +100,21 @@ public static class NotificationBridgeScript
               function () { return mine; });
           };
 
-          {{Slot}} = { proto: proto, show: original.show, get: original.get };
+          {{Slot}} = { proto: proto, show: original.show, get: original.get, open: open };
         })();
         """;
 
-    /// <summary>Quita el puente de la página abierta (modo seguro): vuelven las funciones originales.</summary>
+    /// <summary>
+    /// Quita el puente de la página abierta (modo seguro): vuelven las funciones originales. Los avisos que
+    /// siguieran a la vista se cierran antes, porque WhatsApp ya no podría encontrarlos para cerrarlos (una
+    /// llamada seguiría sonando hasta su tope).
+    /// </summary>
     public static string Remove() => $$"""
         (() => {
           {{Guard}}
           const saved = {{Slot}};
           if (!saved) return;
+          saved.open.slice().forEach(function (e) { try { e.close(); } catch (x) { } });
           saved.proto.showNotification = saved.show;
           if (typeof saved.get === "function") {
             saved.proto.getNotifications = saved.get;

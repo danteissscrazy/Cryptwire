@@ -37,14 +37,16 @@ public partial class App : Application
 
         instance = new SingleInstance();
         var exitOnly = e.Args.Contains(ExitArgument, StringComparer.OrdinalIgnoreCase);
+        var startInTray = e.Args.Contains(StartupCommand.TrayArgument, StringComparer.OrdinalIgnoreCase);
         if (!instance.IsFirst || exitOnly)
         {
-            // Ya hay una Cryptwire abierta: que se enseñe ella (o que se cierre, con --salir).
+            // Ya hay una Cryptwire abierta: que se enseñe ella (o que se cierre, con --salir). Si la
+            // segunda viene del inicio de Windows (--bandeja), no hace nada: la primera ya está en su sitio.
             if (!instance.IsFirst && exitOnly)
             {
                 instance.AskFirstToExit();
             }
-            else if (!instance.IsFirst)
+            else if (!instance.IsFirst && !startInTray)
             {
                 instance.AskFirstToShow();
             }
@@ -55,6 +57,7 @@ public partial class App : Application
 
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
         PaletteResources.Apply(Resources, SkinPalette.Default);
+        DispatcherUnhandledException += OnUnhandledException;
 
         paths = AppPaths.FromEnvironment();
         var main = new MainWindow();
@@ -71,7 +74,7 @@ public partial class App : Application
         router = new NotificationRouter(
             new SoundPlayer(),
             toasts,
-            new ToneResolver(() => skinController.Settings, () => skinController.Active),
+            new ToneResolver(() => skinController.Settings, () => skinController.Active, paths.TonesDir),
             () => new DeliveryContext(
                 skinController.Settings.ShowToasts,
                 WindowActive: main.IsVisible && main.IsActive && main.WindowState != WindowState.Minimized,
@@ -99,13 +102,15 @@ public partial class App : Application
         main.SettingsRequested += (_, _) => ShowSettings();
         main.HideOnClose = () => skinController.Settings.CloseToTray;
         main.HiddenToTray += async (_, _) => await HintTrayOnceAsync(toasts);
+
+        // Cerrada de verdad (sin bandeja, o desde Salir): la app termina con ella.
+        main.Closed += (_, _) => Shutdown();
         instance.Listen(
             show: () => main.Dispatcher.InvokeAsync(main.BringToFront),
             exit: () => main.Dispatcher.InvokeAsync(ExitApp));
         SessionEnding += (_, _) => ExitApp();
         ShowSkinState();
 
-        var startInTray = e.Args.Contains(StartupCommand.TrayArgument, StringComparer.OrdinalIgnoreCase);
         if (startInTray)
         {
             // Al iniciar Windows: WhatsApp arranca por detrás, sin ventana, y avisa desde la bandeja.
@@ -201,7 +206,7 @@ public partial class App : Application
 
     private void ShowSettings()
     {
-        if (window is null || skins is null || router is null || paths is null)
+        if (window is null || window.IsClosed || skins is null || router is null || paths is null)
         {
             return;
         }
@@ -221,6 +226,26 @@ public partial class App : Application
     {
         window?.Exit();
         Shutdown();
+    }
+
+    /// <summary>
+    /// Último recurso: un error que nadie ha previsto (un disco lleno, una imagen imposible) se enseña y la
+    /// app sigue, en vez de cerrarse con WhatsApp dentro. Solo el mensaje del error, nunca el de un aviso.
+    /// </summary>
+    private void OnUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        if (e.Exception is OutOfMemoryException)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        System.Diagnostics.Trace.TraceError($"Cryptwire: error no previsto ({e.Exception.GetType().Name}).");
+        MessageBox.Show(
+            $"Algo no ha salido bien, pero Cryptwire sigue abierta.\n\n{e.Exception.Message}",
+            "Cryptwire",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
     }
 
     private void Fail(Window owner, string message)
