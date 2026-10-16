@@ -1,0 +1,37 @@
+/* Cryptwire · piel de prueba (Fase 1)
+   Solo demuestra que llegan a la página el CSS, un fondo local y una fuente local.
+   No es el diseño: la piel gótico-cyberpunk de verdad es trabajo de la Fase 2. */
+
+@font-face {
+  font-family: "Cryptwire Prueba";
+  src: url("fuentes/Cinzel-VariableFont_wght.ttf") format("truetype");
+  font-weight: 400 900;
+}
+
+#app,
+#app * {
+  font-family: "Cryptwire Prueba", serif !important;
+}
+
+#app {
+  background: #05080f url("fondo.svg") center / cover no-repeat !important;
+}
+
+/* El contenedor que la web pinta de color liso deja ver el fondo. */
+.app-wrapper-web > div {
+  background-color: transparent !important;
+}
+
+/* Sello: si se ve en la esquina, la inyección funciona. */
+body::after {
+  content: "CRYPTWIRE · PIEL DE PRUEBA";
+  position: fixed;
+  right: 14px;
+  bottom: 10px;
+  z-index: 2147483647;
+  pointer-events: none;
+  font: 700 12px/1 "Cryptwire Prueba", serif;
+  letter-spacing: 0.2em;
+  color: #d4af37;
+  text-shadow: 0 0 6px rgba(212, 175, 55, 0.6);
+}

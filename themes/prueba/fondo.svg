@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <!-- Cryptwire · fondo de prueba (Fase 1). Dibujado para Cryptwire, con la misma licencia que el repo. -->
+  <defs>
+    <radialGradient id="noche" cx="50%" cy="45%" r="75%">
+      <stop offset="0" stop-color="#17223f"/>
+      <stop offset="1" stop-color="#05080f"/>
+    </radialGradient>
+    <pattern id="rejilla" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#7fd3ff" stroke-opacity=".08"/>
+    </pattern>
+    <path id="radio" d="M0 -300V-215"/>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#noche)"/>
+  <rect width="1600" height="1000" fill="url(#rejilla)"/>
+  <g transform="translate(800 500)" fill="none" stroke="#d4af37">
+    <circle r="300" stroke-opacity=".45" stroke-width="2"/>
+    <circle r="215" stroke-opacity=".25"/>
+    <circle r="40" stroke-opacity=".45"/>
+    <g stroke-opacity=".35">
+      <use xlink:href="#radio"/>
+      <use xlink:href="#radio" transform="rotate(30)"/>
+      <use xlink:href="#radio" transform="rotate(60)"/>
+      <use xlink:href="#radio" transform="rotate(90)"/>
+      <use xlink:href="#radio" transform="rotate(120)"/>
+      <use xlink:href="#radio" transform="rotate(150)"/>
+      <use xlink:href="#radio" transform="rotate(180)"/>
+      <use xlink:href="#radio" transform="rotate(210)"/>
+      <use xlink:href="#radio" transform="rotate(240)"/>
+      <use xlink:href="#radio" transform="rotate(270)"/>
+      <use xlink:href="#radio" transform="rotate(300)"/>
+      <use xlink:href="#radio" transform="rotate(330)"/>
+    </g>
+    <circle r="345" stroke="#7fd3ff" stroke-opacity=".18" stroke-dasharray="2 14"/>
+  </g>
+</svg>
