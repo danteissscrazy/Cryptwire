@@ -3,9 +3,123 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="Cryptwire"
+        Icon="Assets/logo.ico"
         Width="1280" Height="820"
         MinWidth="800" MinHeight="520"
         WindowStartupLocation="CenterScreen"
-        Background="#0B1020">
-    <wv2:WebView2 x:Name="WebView" DefaultBackgroundColor="#0B1020" />
+        Background="#02040A">
+
+    <!-- Sin el marco de Windows: la barra de título es nuestra. Windows sigue encargándose de mover,
+         redimensionar, ajustar a los bordes y del menú de la ventana con clic derecho. -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="40"
+                      ResizeBorderThickness="6"
+                      GlassFrameThickness="0"
+                      CornerRadius="0"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <FontFamily x:Key="MetaFont">pack://application:,,,/Fuentes/#Share Tech Mono</FontFamily>
+        <SolidColorBrush x:Key="Gold" Color="#DCB663" />
+        <SolidColorBrush x:Key="Faint" Color="#677189" />
+        <SolidColorBrush x:Key="Muted" Color="#9AA3B8" />
+
+        <Style x:Key="CaptionButton" TargetType="Button">
+            <Setter Property="Width" Value="46" />
+            <Setter Property="Foreground" Value="{StaticResource Muted}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1445D4FF" />
+                                <Setter Property="Foreground" Value="#EEF1F7" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#2645D4FF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource CaptionButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#B8243A" />
+                                <Setter Property="Foreground" Value="#FFF4F4" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#8E1A2C" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="Frame" BorderBrush="#47DCB663" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="#02040A" BorderBrush="#1ACDD3E0" BorderThickness="0,0,0,1">
+                <DockPanel LastChildFill="False">
+                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <Image Source="Assets/logo-64.png" Width="24" Height="24"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                        <!-- «Cryptwire» en Grenze Gotisch, dibujada por tools/generar-marca.ps1 (WPF no usa fuentes variables). -->
+                        <Image Source="Assets/marca.png" Height="21" Margin="10,0,0,0" VerticalAlignment="Center"
+                               RenderOptions.BitmapScalingMode="HighQuality">
+                            <Image.Effect>
+                                <DropShadowEffect Color="#DCB663" BlurRadius="14" ShadowDepth="0" Opacity="0.35" />
+                            </Image.Effect>
+                        </Image>
+                        <TextBlock x:Name="SkinTag" Margin="16,2,0,0" VerticalAlignment="Center"
+                                   FontFamily="{StaticResource MetaFont}" FontSize="11"
+                                   Foreground="{StaticResource Faint}" />
+                    </StackPanel>
+
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button x:Name="MinimizeButton" Style="{StaticResource CaptionButton}" Click="OnMinimize"
+                                ToolTip="Minimizar">
+                            <Path Data="M0,0.5 H10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1" SnapsToDevicePixels="True" />
+                        </Button>
+                        <Button x:Name="MaximizeButton" Style="{StaticResource CaptionButton}" Click="OnMaximize"
+                                ToolTip="Maximizar">
+                            <Path x:Name="MaximizeIcon" Data="M0.5,0.5 H9.5 V9.5 H0.5 Z"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1" SnapsToDevicePixels="True" />
+                        </Button>
+                        <Button x:Name="CloseButton" Style="{StaticResource CloseButton}" Click="OnClose"
+                                ToolTip="Cerrar">
+                            <Path Data="M0,0 L10,10 M10,0 L0,10"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1" />
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <wv2:WebView2 x:Name="WebView" Grid.Row="1" DefaultBackgroundColor="#02040A" />
+        </Grid>
+    </Border>
 </Window>

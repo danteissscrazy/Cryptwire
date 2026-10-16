@@ -8,7 +8,15 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>Cryptwire</AssemblyName>
     <Product>Cryptwire</Product>
+    <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <!-- Logo y fuentes de la barra de título, dentro del ejecutable. Se regeneran con tools/generar-iconos.ps1. -->
+  <ItemGroup>
+    <Resource Include="Assets\logo.ico" />
+    <Resource Include="Assets\*.png" />
+    <Resource Include="Fuentes\*.ttf" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Cryptwire.Core\Cryptwire.Core.csproj" />

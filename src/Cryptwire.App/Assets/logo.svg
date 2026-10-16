@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="orb" cx="38%" cy="34%" r="70%">
+      <stop offset="0" stop-color="#ffc2c2"/>
+      <stop offset=".3" stop-color="#f0475c"/>
+      <stop offset=".75" stop-color="#a3132a"/>
+      <stop offset="1" stop-color="#4a0510"/>
+    </radialGradient>
+  </defs>
+  <path d="M60 4h136l56 56v136l-56 56H60L4 196V60z" fill="#070c19" stroke="#dcb663" stroke-opacity=".55" stroke-width="4"/>
+  <circle cx="128" cy="128" r="92" fill="none" stroke="#dcb663" stroke-width="9"/>
+  <g fill="#070c19" stroke="#dcb663" stroke-width="6">
+    <circle cx="128" cy="36" r="13"/><circle cx="174" cy="48.3" r="13"/><circle cx="207.7" cy="82" r="13"/>
+    <circle cx="220" cy="128" r="13"/><circle cx="207.7" cy="174" r="13"/><circle cx="174" cy="207.7" r="13"/>
+    <circle cx="128" cy="220" r="13"/><circle cx="82" cy="207.7" r="13"/><circle cx="48.3" cy="174" r="13"/>
+    <circle cx="36" cy="128" r="13"/><circle cx="48.3" cy="82" r="13"/><circle cx="82" cy="48.3" r="13"/>
+  </g>
+  <path d="M168.3 87.7A57 57 0 1 0 168.3 168.3" fill="none" stroke="#45d4ff" stroke-width="18" stroke-linecap="butt"/>
+  <path d="M168.3 128h22" stroke="#45d4ff" stroke-width="6"/>
+  <path d="M190 112l16 16-16 16-16-16z" fill="url(#orb)" stroke="#f0d48e" stroke-width="2"/>
+</svg>

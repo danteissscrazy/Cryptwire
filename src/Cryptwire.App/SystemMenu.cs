@@ -16,6 +16,10 @@ internal sealed class SystemMenu
     private const uint MfChecked = 0x8;
     private const uint MfPopup = 0x10;
     private const uint MfSeparator = 0x800;
+    private const uint RdwInvalidate = 0x1;
+    private const uint RdwErase = 0x4;
+    private const uint RdwAllChildren = 0x80;
+    private const uint RdwFrame = 0x400;
 
     // Windows reserva los 4 bits bajos de cada orden y las órdenes desde 0xF000 para las suyas.
     private const int SafeModeCommand = 0x1000;
@@ -70,6 +74,10 @@ internal sealed class SystemMenu
         AppendMenu(menu, MfSeparator, 0, null);
         AppendMenu(menu, MfPopup, (nuint)skins, "Piel\tF7");
         AppendMenu(menu, MfString | (safeMode ? MfChecked : 0), SafeModeCommand, "Modo seguro\tF8");
+
+        // Al cambiar el menú, Windows repinta sus botones de la barra clásica encima de la nuestra (que,
+        // con WindowChrome, es zona de la ventana): se repinta la ventana entera para borrarlos.
+        RedrawWindow(window, IntPtr.Zero, IntPtr.Zero, RdwInvalidate | RdwFrame | RdwErase | RdwAllChildren);
     }
 
     private IntPtr OnMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -99,6 +107,10 @@ internal sealed class SystemMenu
 
     [DllImport("user32.dll")]
     private static extern IntPtr CreatePopupMenu();
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool RedrawWindow(IntPtr window, IntPtr updateRect, IntPtr updateRegion, uint flags);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]

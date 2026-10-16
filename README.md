@@ -62,4 +62,4 @@ el repo. Para cerrar sesión del todo, borra esa carpeta o desvincula el disposi
 | `src/Cryptwire.Core` | La lógica sin interfaz: navegación, avisos, pieles, ajustes. Probada con tests |
 | `tests/Cryptwire.Core.Tests` | Tests unitarios de `Core` (xUnit) |
 | `themes/` | Las pieles: CSS más sus fondos, fuentes y tono. Ver `LICENCIAS.md` en cada una |
-| `tools/` | Scripts auxiliares, como el que sintetiza el tono de prueba |
+| `tools/` | Scripts auxiliares: el tono de prueba, el icono (`generar-iconos.ps1`, desde `src/Cryptwire.App/Assets/logo.svg`) y la marca de la barra de título (`generar-marca.ps1`) |
