@@ -3,9 +3,10 @@ using Cryptwire.Core.Settings;
 namespace Cryptwire.Core.Skins;
 
 /// <summary>
-/// Las reglas de lo que se guarda durante una sesión: piel elegida, modo seguro y ventana. El modo
-/// seguro puede venir de tus ajustes (se recuerda) o de arrancar con <c>--modo-seguro</c> (solo esa
-/// vez, nunca se guarda). Cada cambio devuelve los ajustes que hay que guardar.
+/// Las reglas de lo que se guarda durante una sesión: piel elegida, modo seguro, ventana y el resto de
+/// ajustes. Es el único dueño de los ajustes en memoria, para que dos cambios seguidos nunca se pisen.
+/// El modo seguro puede venir de tus ajustes (se recuerda) o de arrancar con <c>--modo-seguro</c> (solo
+/// esa vez, nunca se guarda). Cada cambio devuelve los ajustes que hay que guardar.
 /// </summary>
 public sealed class SkinSession(AppSettings saved, bool safeModeThisSession)
 {
@@ -38,5 +39,17 @@ public sealed class SkinSession(AppSettings saved, bool safeModeThisSession)
         var on = !SafeMode;
         sessionSafeMode = false;
         return Settings = Settings with { SafeMode = on };
+    }
+
+    /// <summary>
+    /// Cualquier otro ajuste (tonos, fondo, avisos, bandeja), cambiado sobre los vigentes. La piel, el
+    /// modo seguro y la ventana tienen sus propias reglas y no se tocan por aquí.
+    /// </summary>
+    public AppSettings Update(Func<AppSettings, AppSettings> change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        var current = Settings;
+        var next = change(current) ?? current;
+        return Settings = next.Normalized() with { ThemeId = current.ThemeId, SafeMode = current.SafeMode, Window = current.Window };
     }
 }

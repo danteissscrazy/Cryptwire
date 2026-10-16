@@ -1,1 +1,13 @@
-{ "name": "Prueba" }
+{
+  "name": "Prueba",
+  "ventana": {
+    "fondo": "#0A0608",
+    "panel": "#160B10",
+    "texto": "#F3E9DC",
+    "suave": "#BFA98F",
+    "tenue": "#7E6A5A",
+    "acento": "#D4AF37",
+    "brillo": "#E0435A",
+    "alerta": "#FF5A4F"
+  }
+}

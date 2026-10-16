@@ -58,7 +58,7 @@ public class SkinSessionTests
         var toSave = session.Select("prueba");
 
         Assert.False(session.SafeMode);
-        Assert.Equal(new AppSettings { ThemeId = "prueba", SafeMode = false }, toSave);
+        Assert.Equivalent(new AppSettings { ThemeId = "prueba", SafeMode = false }, toSave);
     }
 
     [Fact]

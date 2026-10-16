@@ -22,17 +22,25 @@ public sealed class AppPaths
         WebViewDataDir = Path.Combine(localAppData, AppFolder, "WebView2");
         SettingsFile = Path.Combine(localAppData, AppFolder, "settings.json");
         UserThemesDir = Path.Combine(localAppData, AppFolder, "themes");
+        TonesDir = Path.Combine(localAppData, AppFolder, "tonos");
+        WallpapersDir = Path.Combine(localAppData, AppFolder, "fondos");
         ThemesDir = Path.Combine(appBaseDir, "themes");
     }
 
     /// <summary>Perfil de WebView2: cookies y la sesión vinculada por el QR.</summary>
     public string WebViewDataDir { get; }
 
-    /// <summary>Tus ajustes: piel elegida y modo seguro.</summary>
+    /// <summary>Tus ajustes: piel, modo seguro, ventana, tonos, fondo y bandeja.</summary>
     public string SettingsFile { get; }
 
     /// <summary>Las pieles que añades tú. Una con el mismo nombre que una de la app la sustituye.</summary>
     public string UserThemesDir { get; }
+
+    /// <summary>Las copias de los tonos que eliges.</summary>
+    public string TonesDir { get; }
+
+    /// <summary>Tu fondo de la conversación, ya reducido y recomprimido.</summary>
+    public string WallpapersDir { get; }
 
     /// <summary>Las pieles que se distribuyen con la app.</summary>
     public string ThemesDir { get; }

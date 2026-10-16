@@ -15,7 +15,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
     {
         var settings = new JsonSettingsStore(SettingsPath).Load();
 
-        Assert.Equal(new AppSettings(), settings);
+        Assert.Equivalent(new AppSettings(), settings);
         Assert.Null(settings.ThemeId);
         Assert.False(settings.SafeMode);
     }
@@ -27,7 +27,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
 
         store.Save(new AppSettings { ThemeId = "relicario", SafeMode = true });
 
-        Assert.Equal(new AppSettings { ThemeId = "relicario", SafeMode = true }, store.Load());
+        Assert.Equivalent(new AppSettings { ThemeId = "relicario", SafeMode = true }, store.Load());
         Assert.False(File.Exists(SettingsPath + ".tmp"));
     }
 
@@ -39,7 +39,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
 
         store.Save(settings);
 
-        Assert.Equal(settings, store.Load());
+        Assert.Equivalent(settings, store.Load(), strict: true);
         Assert.DoesNotContain("isPlausible", File.ReadAllText(SettingsPath));
     }
 
@@ -51,7 +51,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
 
         store.Save(new AppSettings { ThemeId = "relicario" });
 
-        Assert.Equal(new AppSettings { ThemeId = "relicario" }, store.Load());
+        Assert.Equivalent(new AppSettings { ThemeId = "relicario" }, store.Load());
     }
 
     [Fact]
@@ -75,7 +75,64 @@ public sealed class JsonSettingsStoreTests : IDisposable
     {
         dir.Write(@"Cryptwire\settings.json", content);
 
-        Assert.Equal(new AppSettings(), new JsonSettingsStore(SettingsPath).Load());
+        Assert.Equivalent(new AppSettings(), new JsonSettingsStore(SettingsPath).Load());
+    }
+
+    [Fact]
+    public void TonesWallpaperAndTraySurviveASaveAndALoad()
+    {
+        var store = new JsonSettingsStore(SettingsPath);
+        var settings = new AppSettings
+        {
+            MessageTone = ToneChoice.FromFile(@"C:\Cryptwire\tonos\acero.wav"),
+            CallTone = ToneChoice.Silent,
+            Wallpaper = new WallpaperSettings(@"C:\Cryptwire\fondos\fondo.jpg", Dim: 30),
+            ShowToasts = false,
+            CloseToTray = false,
+            TrayHintShown = true,
+        }.WithToneRule("Trish", @"C:\Cryptwire\tonos\trish.wav", null);
+
+        store.Save(settings);
+
+        Assert.Equivalent(settings, store.Load(), strict: true);
+        var json = File.ReadAllText(SettingsPath);
+        Assert.Contains("\"source\": \"File\"", json);
+        Assert.Contains("\"source\": \"None\"", json);
+        Assert.Contains("\"chat\": \"Trish\"", json);
+    }
+
+    [Fact]
+    public void AFileFromPhaseTwoGetsTheNewDefaults()
+    {
+        dir.Write(@"Cryptwire\settings.json", """{ "themeId": "relicario", "safeMode": false }""");
+
+        var settings = new JsonSettingsStore(SettingsPath).Load();
+
+        Assert.Equal("relicario", settings.ThemeId);
+        Assert.Equal(ToneChoice.FromSkin, settings.MessageTone);
+        Assert.Empty(settings.ToneRules);
+        Assert.True(settings.CloseToTray);
+        Assert.True(settings.ShowToasts);
+    }
+
+    [Fact]
+    public void NullsInAHandEditedFileGetTheirDefaults()
+    {
+        dir.Write(@"Cryptwire\settings.json", """{ "themeId": "relicario", "messageTone": null, "toneRules": [null, { "chat": "Trish", "messageTone": "t.wav" }] }""");
+
+        var settings = new JsonSettingsStore(SettingsPath).Load();
+
+        Assert.Equal("relicario", settings.ThemeId);
+        Assert.Equal(ToneChoice.FromSkin, settings.MessageTone);
+        Assert.Equal([new ToneRule("Trish", "t.wav")], settings.ToneRules);
+    }
+
+    [Fact]
+    public void AnUnknownToneSourceIsABrokenFile()
+    {
+        dir.Write(@"Cryptwire\settings.json", """{ "themeId": "relicario", "messageTone": { "source": "Telepatia" } }""");
+
+        Assert.Equivalent(new AppSettings(), new JsonSettingsStore(SettingsPath).Load());
     }
 
     [Fact]

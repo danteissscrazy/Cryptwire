@@ -13,6 +13,7 @@ public sealed class ThemeManager
 {
     public const string CssFile = "skin.css";
     public const string ToneFile = "tono.wav";
+    public const string CallToneFile = "llamada.wav";
     public const string ManifestFile = "theme.json";
 
     /// <summary>La piel que se usa si no has elegido otra, o si la que elegiste ya no está.</summary>
@@ -62,7 +63,8 @@ public sealed class ThemeManager
                 }
 
                 var id = Path.GetFileName(dir);
-                found[id] = new Theme(id, ReadName(dir) ?? id, dir);
+                var (name, palette) = ReadManifest(dir);
+                found[id] = new Theme(id, name ?? id, dir) { Palette = palette };
             }
         }
 
@@ -211,10 +213,11 @@ public sealed class ThemeManager
     }
 
     /// <summary>
-    /// El nombre del <c>theme.json</c>, limpio: una línea, sin caracteres de control y corto, porque
-    /// se enseña en la barra de título y en el menú. Null si no hay o no vale.
+    /// El nombre y los colores del <c>theme.json</c>. El nombre, limpio: una línea, sin caracteres de
+    /// control y corto, porque se enseña en la barra de título y en el menú; null si no hay o no vale.
+    /// Los colores, los de la piel o los de serie (<see cref="SkinPalette.FromManifest"/>).
     /// </summary>
-    private static string? ReadName(string dir)
+    private static (string? Name, SkinPalette Palette) ReadManifest(string dir)
     {
         var manifest = Path.Combine(dir, ManifestFile);
         try
@@ -222,23 +225,25 @@ public sealed class ThemeManager
             var info = new FileInfo(manifest);
             if (!info.Exists || info.Length > MaxManifestBytes)
             {
-                return null;
+                return (null, SkinPalette.Default);
             }
 
             using var json = JsonDocument.Parse(File.ReadAllText(manifest));
-            if (json.RootElement.ValueKind != JsonValueKind.Object
-                || !json.RootElement.TryGetProperty("name", out var name)
+            var root = json.RootElement;
+            var palette = SkinPalette.FromManifest(root);
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("name", out var name)
                 || name.ValueKind != JsonValueKind.String)
             {
-                return null;
+                return (null, palette);
             }
 
             var clean = CleanName(name.GetString()!);
-            return clean.Length > 0 ? clean : null;
+            return (clean.Length > 0 ? clean : null, palette);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
         {
-            return null;
+            return (null, SkinPalette.Default);
         }
     }
 }

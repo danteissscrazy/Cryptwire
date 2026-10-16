@@ -4,7 +4,8 @@ namespace Cryptwire.Core.Settings;
 
 /// <summary>
 /// Guarda los ajustes en un JSON de la carpeta del usuario. Un fichero roto o ilegible nunca impide
-/// arrancar: se usan los ajustes de por defecto.
+/// arrancar: se usan los ajustes de por defecto. Uno legible pero con huecos (un <c>null</c> donde va un
+/// tono) se completa con los valores de serie.
 /// </summary>
 public sealed class JsonSettingsStore(string path) : ISettingsStore
 {
@@ -23,7 +24,7 @@ public sealed class JsonSettingsStore(string path) : ISettingsStore
                 return new AppSettings();
             }
 
-            return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path), Options) ?? new AppSettings();
+            return (JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path), Options) ?? new AppSettings()).Normalized();
         }
         catch (Exception e) when (e is JsonException or IOException or UnauthorizedAccessException)
         {

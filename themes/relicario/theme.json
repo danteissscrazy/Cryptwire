@@ -1,1 +1,13 @@
-{ "name": "Relicario" }
+{
+  "name": "Relicario",
+  "ventana": {
+    "fondo": "#02040A",
+    "panel": "#070C19",
+    "texto": "#EEF1F7",
+    "suave": "#9AA3B8",
+    "tenue": "#677189",
+    "acento": "#DCB663",
+    "brillo": "#45D4FF",
+    "alerta": "#E0435A"
+  }
+}

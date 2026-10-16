@@ -1,48 +1,93 @@
 using Cryptwire.Core.Notifications;
+using Cryptwire.Core.Settings;
+using Cryptwire.Core.Skins;
 
 namespace Cryptwire.Core.Tests;
 
 public class NotificationRouterTests
 {
     private const string WhatsApp = "https://web.whatsapp.com";
+    private const string SkinDir = @"C:\pieles\relicario";
 
     private readonly FakeSoundPlayer sound = new();
     private readonly FakeToastService toast = new();
     private readonly IncomingNotification message = new(WhatsApp, "Chat de prueba", "Hola");
+    private readonly IncomingNotification call = new(WhatsApp, "Vergil", "Llamada entrante", NotificationBridgeScript.CallTagPrefix + "3EB0");
+
+    private AppSettings settings = new();
+    private Theme? theme = new("relicario", "Relicario", SkinDir);
+    private DeliveryContext context = new(ToastsOn: true, WindowActive: false, DesktopState.Available);
+
+    private NotificationRouter Router() =>
+        new(sound, toast, new ToneResolver(() => settings, () => theme), () => context);
 
     [Fact]
-    public void PlaysTheSkinToneAndShowsTheNotice()
+    public void AMessagePlaysTheSkinToneOnceAndShowsTheNotice()
     {
-        var router = new NotificationRouter(sound, toast, () => @"C:\cryptwire\tono.wav");
+        var key = Router().Handle(message);
 
-        Assert.True(router.Handle(message));
-
-        Assert.Equal([@"C:\cryptwire\tono.wav"], sound.Played);
-        Assert.Equal([message], toast.Shown);
+        Assert.NotNull(key);
+        Assert.Equal([Path.Combine(SkinDir, "tono.wav")], sound.Played);
+        Assert.Empty(sound.Rings);
+        var shown = Assert.Single(toast.Shown);
+        Assert.Equal((key, NotificationKind.Message, "Chat de prueba", "Hola"), (shown.Key, shown.Kind, shown.Title, shown.Body));
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("  ")]
-    public void WithoutToneItStaysSilentButStillNotifies(string? tonePath)
+    [Fact]
+    public void ACallRingsWithTheCallToneUntilItIsAnswered()
     {
-        var router = new NotificationRouter(sound, toast, () => tonePath);
-
-        Assert.True(router.Handle(message));
+        var key = Router().Handle(call)!;
 
         Assert.Empty(sound.Played);
-        Assert.Equal([message], toast.Shown);
+        Assert.Equal([(key, Path.Combine(SkinDir, "llamada.wav"), NotificationRouter.MaxRing)], sound.Rings);
+        Assert.Equal(NotificationKind.Call, Assert.Single(toast.Shown).Kind);
     }
 
     [Fact]
-    public void EachNotificationSoundsOnce()
+    public void ClickingTheNoticeStopsTheRingAndTellsThePage()
     {
-        var router = new NotificationRouter(sound, toast, () => "tono.wav");
+        var clicked = 0;
+        var key = Router().Handle(call, clicked: () => clicked++)!;
 
-        router.Handle(message);
-        router.Handle(message with { Body = "Otro" });
+        toast.Shown[0].Clicked!();
 
+        Assert.Equal([key], sound.Stopped);
+        Assert.Equal(1, clicked);
+    }
+
+    [Fact]
+    public void DismissingTheNoticeStopsTheRingAndTellsThePage()
+    {
+        var dismissed = 0;
+        var key = Router().Handle(call, dismissed: () => dismissed++)!;
+
+        toast.Shown[0].Dismissed!();
+
+        Assert.Equal([key], sound.Stopped);
+        Assert.Equal(1, dismissed);
+    }
+
+    [Fact]
+    public void WhenThePageClosesItTheRingStopsAndTheNoticeGoes()
+    {
+        var router = Router();
+        var key = router.Handle(call)!;
+
+        router.Close(key);
+
+        Assert.Equal([key], sound.Stopped);
+        Assert.Equal([key], toast.Closed);
+    }
+
+    [Fact]
+    public void EachNoticeHasItsOwnKey()
+    {
+        var router = Router();
+
+        var first = router.Handle(message);
+        var second = router.Handle(message with { Body = "Otro" });
+
+        Assert.NotEqual(first, second);
         Assert.Equal(2, sound.Played.Count);
         Assert.Equal(2, toast.Shown.Count);
     }
@@ -50,14 +95,35 @@ public class NotificationRouterTests
     [Fact]
     public void TheToneFollowsTheSkinThatIsActiveWhenTheNoticeArrives()
     {
-        var tone = @"C:\pieles\prueba\tono.wav";
-        var router = new NotificationRouter(sound, toast, () => tone);
+        var router = Router();
 
         router.Handle(message);
-        tone = @"C:\pieles\relicario\tono.wav";
+        theme = new Theme("prueba", "Prueba", @"C:\pieles\prueba");
         router.Handle(message);
 
-        Assert.Equal([@"C:\pieles\prueba\tono.wav", @"C:\pieles\relicario\tono.wav"], sound.Played);
+        Assert.Equal([Path.Combine(SkinDir, "tono.wav"), @"C:\pieles\prueba\tono.wav"], sound.Played);
+    }
+
+    [Fact]
+    public void WithoutAnyToneItStaysSilentButStillNotifies()
+    {
+        theme = null;
+
+        Assert.NotNull(Router().Handle(message));
+
+        Assert.Empty(sound.Played);
+        Assert.Single(toast.Shown);
+    }
+
+    [Fact]
+    public void WhatTheDesktopAllowsDecidesToneAndNotice()
+    {
+        context = context with { Desktop = DesktopState.QuietTime };
+
+        Assert.NotNull(Router().Handle(message));
+
+        Assert.Empty(sound.Played);
+        Assert.Empty(toast.Shown);
     }
 
     [Theory]
@@ -67,20 +133,32 @@ public class NotificationRouterTests
     [InlineData("")]
     public void NoticesFromAnyoneElseAreDropped(string origin)
     {
-        var router = new NotificationRouter(sound, toast, () => "tono.wav");
+        var router = Router();
 
-        Assert.False(router.Handle(message with { Origin = origin }));
+        Assert.Null(router.Handle(call with { Origin = origin }));
 
         Assert.Empty(sound.Played);
+        Assert.Empty(sound.Rings);
         Assert.Empty(toast.Shown);
+        Assert.Empty(router.Recent.Names);
+    }
+
+    [Fact]
+    public void ChatsThatNotifyAreRememberedForTheSettingsButNotTheTestNotice()
+    {
+        var router = Router();
+
+        router.Handle(message);
+        router.Handle(call);
+        router.Handle(new IncomingNotification(WhatsApp, "WhatsApp", "Prueba", NotificationBridgeScript.WorkerTagPrefix + "verify-notification"));
+
+        Assert.Equal(["Vergil", "Chat de prueba"], router.Recent.Names);
     }
 
     [Fact]
     public void RejectsANullNotification()
     {
-        var router = new NotificationRouter(sound, toast, () => "tono.wav");
-
-        Assert.Throws<ArgumentNullException>(() => router.Handle(null!));
+        Assert.Throws<ArgumentNullException>(() => Router().Handle(null!));
         Assert.Empty(sound.Played);
     }
 
@@ -88,13 +166,25 @@ public class NotificationRouterTests
     {
         public List<string> Played { get; } = [];
 
+        public List<(string Key, string Path, TimeSpan Max)> Rings { get; } = [];
+
+        public List<string> Stopped { get; } = [];
+
         public void Play(string path) => Played.Add(path);
+
+        public void Ring(string key, string path, TimeSpan max) => Rings.Add((key, path, max));
+
+        public void StopRinging(string key) => Stopped.Add(key);
     }
 
     private sealed class FakeToastService : IToastService
     {
-        public List<IncomingNotification> Shown { get; } = [];
+        public List<Toast> Shown { get; } = [];
 
-        public void Show(IncomingNotification notification) => Shown.Add(notification);
+        public List<string> Closed { get; } = [];
+
+        public void Show(Toast toast) => Shown.Add(toast);
+
+        public void Close(string key) => Closed.Add(key);
     }
 }
