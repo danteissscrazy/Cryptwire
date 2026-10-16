@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using Cryptwire.Core.Settings;
 using Cryptwire.Core.Skins;
 using Cryptwire.Core.Wallpapers;
+using Cryptwire.Core.Widgets;
 using Microsoft.Web.WebView2.Core;
 
 namespace Cryptwire.App;
@@ -114,17 +115,18 @@ internal sealed class SkinController(ThemeManager themes, ISettingsStore store, 
             if (injector is not null)
             {
                 var wallpaper = WallpaperCss.Build(session.Settings.Wallpaper, wallpapersDir);
+                var veil = session.Settings.Veil;
                 if (SafeMode)
                 {
                     await injector.RemoveAsync();
                 }
                 else if (Active is null)
                 {
-                    await injector.ApplyAsync(css: wallpaper);
+                    await injector.ApplyAsync(PageCss.Compose(null, wallpaper, veil));
                 }
                 else if (await TryBuildAsync(Active) is { } css)
                 {
-                    await injector.ApplyAsync(css + wallpaper);
+                    await injector.ApplyAsync(PageCss.Compose(css, wallpaper, veil));
                 }
             }
         }

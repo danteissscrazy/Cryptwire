@@ -23,7 +23,8 @@ public enum DesktopState
 /// <param name="ToastsOn">Tu ajuste de avisos en pantalla.</param>
 /// <param name="WindowActive">Cryptwire está delante: WhatsApp ya enseña lo que llega.</param>
 /// <param name="Desktop">El estado de Windows.</param>
-public sealed record DeliveryContext(bool ToastsOn, bool WindowActive, DesktopState Desktop);
+/// <param name="Silenced">Sigilo encendido: ni tonos ni avisos de nada, llamadas incluidas.</param>
+public sealed record DeliveryContext(bool ToastsOn, bool WindowActive, DesktopState Desktop, bool Silenced = false);
 
 /// <summary>Si suena el tono y si sale el aviso en pantalla.</summary>
 public sealed record Delivery(bool PlayTone, bool ShowToast);
@@ -38,6 +39,11 @@ public static class DeliveryPolicy
     public static Delivery Decide(NotificationKind kind, DeliveryContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
+
+        if (context.Silenced)
+        {
+            return new Delivery(PlayTone: false, ShowToast: false);
+        }
 
         var showToast = context.ToastsOn && !context.WindowActive && context.Desktop == DesktopState.Available;
         var playTone = kind == NotificationKind.Call

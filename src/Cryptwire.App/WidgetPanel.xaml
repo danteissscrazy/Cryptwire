@@ -1,0 +1,128 @@
+<UserControl x:Class="Cryptwire.App.WidgetPanel"
+             x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="clr-namespace:Cryptwire.App"
+             Width="248">
+
+    <!-- El panel de widgets de la maqueta v4: una columna a la derecha con tarjetas de esquinas cortadas.
+         Enlace y sin leer, Sigilo y Velo, y el reloj abajo. Los datos, de WidgetsViewModel. -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="Visible" />
+        <Style x:Key="CardLabel" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MetaFont}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Accent}" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+        <Style x:Key="Title" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Text}" />
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Soft}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+        <Style x:Key="Icon" TargetType="Path">
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="0,2,12,0" />
+            <Setter Property="Stroke" Value="{DynamicResource Cw.Soft}" />
+            <Setter Property="StrokeThickness" Value="1.2" />
+        </Style>
+        <!-- Tarjeta: filo fino con las esquinas de arriba a la izquierda y abajo a la derecha cortadas. -->
+        <Style x:Key="Card" TargetType="ContentControl">
+            <Setter Property="Margin" Value="12,12,12,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Grid>
+                            <Path Stretch="Fill" Data="M10,0 H100 V90 L90,100 H0 V10 Z" Stroke="{DynamicResource Cw.Line}"
+                                  StrokeThickness="1" Fill="{DynamicResource Cw.Panel}" />
+                            <ContentPresenter Margin="16,14,16,16" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource Cw.Background}" BorderBrush="{DynamicResource Cw.Line}" BorderThickness="1,0,0,0">
+        <DockPanel>
+            <!-- Reloj abajo, grande. -->
+            <StackPanel DockPanel.Dock="Bottom" Margin="0,0,0,22" HorizontalAlignment="Center">
+                <Rectangle Height="1" Fill="{DynamicResource Cw.Line}" Width="200" Margin="0,0,0,18" />
+                <TextBlock Text="{Binding Time}" FontFamily="{StaticResource MetaFont}" FontSize="42"
+                           Foreground="{DynamicResource Cw.Text}" HorizontalAlignment="Center" />
+                <TextBlock app:Letterspace.Text="{Binding Date}" FontFamily="{StaticResource MetaFont}" FontSize="11.5"
+                           Foreground="{DynamicResource Cw.Faint}" HorizontalAlignment="Center" Margin="0,2,0,0" />
+            </StackPanel>
+
+            <StackPanel DockPanel.Dock="Top">
+                <ContentControl Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabel}" app:Letterspace.Text="— enlace" />
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="M5,0 L10,5 L5,10 L0,5 Z" Width="10" Height="10" Stretch="Uniform" VerticalAlignment="Center"
+                                  Fill="{DynamicResource Cw.Glow}" Margin="0,0,10,0" />
+                            <TextBlock FontFamily="{StaticResource MetaFont}" FontSize="11.5" Foreground="{DynamicResource Cw.Glow}"
+                                       app:Letterspace.Text="{Binding LinkLabel}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0" Visibility="{Binding HasUnread, Converter={StaticResource Visible}}">
+                            <Grid Width="22" Height="22">
+                                <Ellipse Fill="{DynamicResource Cw.Alert}" Stroke="{DynamicResource Cw.Glow}" StrokeThickness="1" />
+                                <TextBlock Text="{Binding UnreadLabel}" FontFamily="Segoe UI" FontWeight="Bold" FontSize="10.5"
+                                           Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Grid>
+                            <TextBlock FontFamily="{StaticResource MetaFont}" FontSize="11.5" Foreground="{DynamicResource Cw.Soft}"
+                                       app:Letterspace.Text="sin leer" VerticalAlignment="Center" Margin="10,0,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </ContentControl>
+
+                <ContentControl Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardLabel}" app:Letterspace.Text="— sigilo" />
+                        <DockPanel>
+                            <Path DockPanel.Dock="Left" Style="{StaticResource Icon}"
+                                  Data="M9,1 A6.5,6.5 0 1 0 13.5,10.2 A5.2,5.2 0 0 1 9,1 Z" />
+                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" VerticalAlignment="Top" Margin="8,2,0,0"
+                                      IsChecked="{Binding StealthOn}" AutomationProperties.Name="Sigilo" />
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Title}" Text="Sigilo" />
+                                <TextBlock Style="{StaticResource Hint}" Text="{Binding StealthLabel}" />
+                            </StackPanel>
+                        </DockPanel>
+                        <!-- Lo que queda de la hora: rayitas de oro sobre rayitas tenues. -->
+                        <Grid Width="186" Height="3" HorizontalAlignment="Left" Margin="0,12,0,14"
+                              Visibility="{Binding StealthOn, Converter={StaticResource Visible}}">
+                            <Line X1="0" X2="186" Y1="1.5" Y2="1.5" Stroke="{DynamicResource Cw.Line}" StrokeThickness="3" StrokeDashArray="2.5 1" />
+                            <Canvas HorizontalAlignment="Left" ClipToBounds="True"
+                                    Width="{Binding StealthProgress, Converter={x:Static app:ScaleConverter.Instance}, ConverterParameter=186}">
+                                <Line X1="0" X2="186" Y1="1.5" Y2="1.5" Stroke="{DynamicResource Cw.Accent}" StrokeThickness="3" StrokeDashArray="2.5 1" />
+                            </Canvas>
+                        </Grid>
+                        <Rectangle Height="1" Fill="{DynamicResource Cw.Line}" Margin="0,4,0,12"
+                                   Visibility="{Binding StealthOn, Converter={x:Static app:InverseVisibilityConverter.Instance}}" />
+                        <DockPanel>
+                            <Path DockPanel.Dock="Left" Style="{StaticResource Icon}"
+                                  Data="M1,7 C3.5,2.5 10.5,2.5 13,7 C10.5,11.5 3.5,11.5 1,7 Z M7,5 A2,2 0 1 1 6.99,5 Z" />
+                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" VerticalAlignment="Top" Margin="8,2,0,0"
+                                      IsChecked="{Binding VeilOn}" AutomationProperties.Name="Velo" />
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Title}" Text="Velo" />
+                                <TextBlock Style="{StaticResource Hint}" Text="Difumina los chats hasta pasar el ratón" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </ContentControl>
+            </StackPanel>
+        </DockPanel>
+    </Border>
+</UserControl>

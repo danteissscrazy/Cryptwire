@@ -7,13 +7,15 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Cryptwire.Core.Notifications;
+using Cryptwire.Core.Widgets;
 
 namespace Cryptwire.App;
 
 /// <summary>
-/// La ventana: la barra de título propia (logo, nombre, piel activa, ajustes y botones) y el navegador
-/// embebido, que configura <see cref="WhatsAppHost"/>. Da acceso a las pieles con el teclado (F7, F8) y
-/// con el menú de la ventana (clic derecho en la barra de título). Al cerrarla puede quedarse en la bandeja.
+/// La ventana: la barra de título propia (logo, nombre, piel activa, ajustes y botones), el navegador
+/// embebido, que configura <see cref="WhatsAppHost"/>, y los widgets en barra o en panel. Da acceso a las
+/// pieles y los widgets con el teclado (F7, F8, F9) y con el menú de la ventana (clic derecho en la barra
+/// de título). Al cerrarla puede quedarse en la bandeja.
 /// </summary>
 public partial class MainWindow : Window
 {
@@ -47,6 +49,7 @@ public partial class MainWindow : Window
         SettingsLabel.Text = Spaced("ajustes");
         Closed += (_, _) => closed = true;
         StateChanged += (_, _) => FitToState();
+        SizeChanged += (_, _) => ApplyWidgets();
         FitToState();
     }
 
@@ -64,6 +67,17 @@ public partial class MainWindow : Window
 
     /// <summary>Cerrada de verdad: no se puede volver a enseñar.</summary>
     internal bool IsClosed => closed;
+
+    /// <summary>F9: el siguiente modo de widgets (barra, panel, ninguno).</summary>
+    internal event EventHandler? WidgetModeRequested;
+
+    /// <summary>Los widgets enseñan lo que da este modelo, igual en la barra que en el panel.</summary>
+    internal void ShowWidgets(WidgetsViewModel model)
+    {
+        WidgetBar.DataContext = model;
+        WidgetPanel.DataContext = model;
+        ApplyWidgets();
+    }
 
     /// <summary>
     /// Conecta los atajos y el menú con las pieles. WebView2 pasa a la ventana las teclas de función
@@ -252,7 +266,29 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 await skins.ToggleSafeModeAsync();
                 break;
+            case Key.F9:
+                e.Handled = true;
+                WidgetModeRequested?.Invoke(this, EventArgs.Empty);
+                break;
         }
+    }
+
+    /// <summary>
+    /// Barra, panel o nada, según tus ajustes y el ancho de la ventana (un panel en una ventana estrecha pasa
+    /// a barra). En la barra de título, junto a «Ajustes», el modo elegido, como en la maqueta.
+    /// </summary>
+    private void ApplyWidgets()
+    {
+        if (skins is null || WidgetBar.DataContext is null)
+        {
+            return;
+        }
+
+        var settings = skins.Settings;
+        var shown = WidgetLayout.Effective(settings.Widgets, ActualWidth, settings.PanelToBarWhenNarrow);
+        WidgetBar.Visibility = shown == WidgetMode.Bar ? Visibility.Visible : Visibility.Collapsed;
+        WidgetPanel.Visibility = shown == WidgetMode.Panel ? Visibility.Visible : Visibility.Collapsed;
+        SettingsLabel.Text = Spaced("ajustes · " + WidgetLayout.Name(settings.Widgets));
     }
 
     private void OnSettings(object sender, RoutedEventArgs e) => SettingsRequested?.Invoke(this, EventArgs.Empty);
@@ -381,6 +417,7 @@ public partial class MainWindow : Window
         SkinTag.Text = Spaced(tag);
         SkinTag.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, skins.SafeMode ? "Cw.Alert" : "Cw.Faint");
         menu?.Update(skins.Available, skins.Active, skins.SafeMode);
+        ApplyWidgets();
     }
 
     [StructLayout(LayoutKind.Sequential)]

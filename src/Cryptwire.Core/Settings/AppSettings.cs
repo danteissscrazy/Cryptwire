@@ -1,12 +1,13 @@
 using System.Text.Json.Serialization;
 using Cryptwire.Core.Notifications;
+using Cryptwire.Core.Widgets;
 
 namespace Cryptwire.Core.Settings;
 
 /// <summary>
 /// Lo que eliges y se guarda entre sesiones: la piel, el modo seguro y la ventana (Fase 2); los tonos, el
-/// fondo, los avisos y la bandeja (Fase 3). El inicio con Windows no está aquí: vive en el registro, que
-/// es lo que Windows mira al arrancar.
+/// fondo, los avisos, la bandeja y los widgets (Fase 3). El inicio con Windows no está aquí: vive en el
+/// registro, que es lo que Windows mira al arrancar.
 /// </summary>
 /// <remarks>
 /// <see cref="ToneRules"/> es una lista, y un record compara las listas por referencia: dos ajustes con
@@ -43,6 +44,18 @@ public sealed record AppSettings
 
     /// <summary>Ya se te ha avisado una vez de que Cryptwire sigue en la bandeja al cerrar.</summary>
     public bool TrayHintShown { get; init; }
+
+    /// <summary>Dónde van los widgets: barra (de serie), panel o ninguno.</summary>
+    public WidgetMode Widgets { get; init; } = WidgetMode.Bar;
+
+    /// <summary>Con la ventana estrecha, el panel de widgets pasa a barra.</summary>
+    public bool PanelToBarWhenNarrow { get; init; } = true;
+
+    /// <summary>Sigilo: hasta cuándo no suena ni se ve ningún aviso. Null o pasado: apagado.</summary>
+    public DateTimeOffset? SilencedUntil { get; init; }
+
+    /// <summary>Velo: los chats difuminados hasta pasar el ratón.</summary>
+    public bool Veil { get; init; }
 
     /// <summary>
     /// Los mismos ajustes sin huecos imposibles: un <c>settings.json</c> editado a mano puede traer

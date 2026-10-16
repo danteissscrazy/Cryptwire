@@ -63,6 +63,9 @@ ventana o el icono de la bandeja. Se guarda en `%LOCALAPPDATA%\Cryptwire\setting
 | Avisos en pantalla | Salen en la esquina con los colores de la piel; pulsar uno abre ese chat. No salen si estás en Cryptwire o con algo a pantalla completa. Se pueden apagar y dejar solo el tono |
 | Seguir recibiendo avisos con la ventana cerrada | Cerrar la deja en la bandeja (se puede cambiar en Ajustes). Clic en el icono para volver; clic derecho › Salir para cerrar del todo |
 | Arrancar con Windows | Ajustes › Sistema. Arranca en la bandeja, sin ventana |
+| Widgets | De serie, una barra fina bajo la conversación: enlace, Sigilo, Velo, sin leer y reloj. En Ajustes › Widgets, panel a la derecha o ninguno; `F9` rota entre los tres. Con la ventana estrecha (menos de 1100 px), el panel pasa a barra |
+| Sigilo | Una hora sin tonos ni avisos de Cryptwire, llamadas incluidas: su conmutador en los widgets o la bandeja. El «No molestar» de Windows no se ve desde las apps; este es el de Cryptwire |
+| Velo | Difumina los chats hasta pasar el ratón por encima. Es CSS en la página, así que con el modo seguro no está |
 | Cerrar desde un script | `Cryptwire.exe --salir` |
 
 Solo hay una Cryptwire abierta a la vez: volver a abrirla trae la que ya estaba. Con mensajes sin

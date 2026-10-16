@@ -10,6 +10,7 @@ using Cryptwire.Core;
 using Cryptwire.Core.Notifications;
 using Cryptwire.Core.Settings;
 using Cryptwire.Core.Tones;
+using Cryptwire.Core.Widgets;
 using Microsoft.Win32;
 
 namespace Cryptwire.App;
@@ -53,6 +54,7 @@ internal sealed class SettingsViewModel : INotifyPropertyChanged
         ClearRuleCallCommand = new RelayCommand(p => ClearRuleCall(p as ToneRuleRow));
         RemoveRuleCommand = new RelayCommand(p => RemoveRule(p as ToneRuleRow));
         PlayFileCommand = new RelayCommand(p => Play(p as string));
+        SetWidgetsCommand = new RelayCommand(p => SetWidgets(p as string));
         ChooseWallpaperCommand = new RelayCommand(ChooseWallpaper);
         RemoveWallpaperCommand = new RelayCommand(RemoveWallpaper);
 
@@ -163,6 +165,20 @@ internal sealed class SettingsViewModel : INotifyPropertyChanged
     public ICommand ChooseWallpaperCommand { get; }
 
     public ICommand RemoveWallpaperCommand { get; }
+
+    // ── Widgets ────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>«barra», «panel» o «ninguno», para marcar la carta elegida.</summary>
+    public string WidgetModeName => WidgetLayout.Name(skins.Settings.Widgets);
+
+    /// <summary>Parámetro: «barra», «panel» o «ninguno».</summary>
+    public ICommand SetWidgetsCommand { get; }
+
+    public bool PanelToBarWhenNarrow
+    {
+        get => skins.Settings.PanelToBarWhenNarrow;
+        set => Update(s => s with { PanelToBarWhenNarrow = value }, refresh: false);
+    }
 
     // ── Sistema ────────────────────────────────────────────────────────────────────────────────────
 
@@ -326,6 +342,22 @@ internal sealed class SettingsViewModel : INotifyPropertyChanged
         }
 
         Update(s => call ? s with { CallTone = choice } : s with { MessageTone = choice }, refresh: false);
+    }
+
+    private void SetWidgets(string? name)
+    {
+        WidgetMode? mode = name switch
+        {
+            "barra" => WidgetMode.Bar,
+            "panel" => WidgetMode.Panel,
+            "ninguno" => WidgetMode.None,
+            _ => null,
+        };
+
+        if (mode is { } chosen)
+        {
+            Update(s => s with { Widgets = chosen }, refresh: false);
+        }
     }
 
     private void PlayGeneral(bool call)

@@ -17,6 +17,7 @@ internal sealed class TrayIcon : IDisposable
     private readonly Forms.NotifyIcon icon;
     private readonly Forms.ContextMenuStrip menu;
     private readonly Forms.ToolStripMenuItem safeModeItem;
+    private readonly Forms.ToolStripMenuItem stealthItem;
     private readonly Drawing.Icon plain;
     private Drawing.Icon? badge;
     private IntPtr badgeHandle;
@@ -37,9 +38,11 @@ internal sealed class TrayIcon : IDisposable
         settings.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
         safeModeItem = new Forms.ToolStripMenuItem("Modo seguro");
         safeModeItem.Click += (_, _) => SafeModeRequested?.Invoke(this, EventArgs.Empty);
+        stealthItem = new Forms.ToolStripMenuItem("Sigilo una hora");
+        stealthItem.Click += (_, _) => StealthRequested?.Invoke(this, EventArgs.Empty);
         var exit = new Forms.ToolStripMenuItem("Salir");
         exit.Click += (_, _) => ExitRequested?.Invoke(this, EventArgs.Empty);
-        menu.Items.AddRange([open, new Forms.ToolStripSeparator(), settings, safeModeItem, new Forms.ToolStripSeparator(), exit]);
+        menu.Items.AddRange([open, new Forms.ToolStripSeparator(), settings, stealthItem, safeModeItem, new Forms.ToolStripSeparator(), exit]);
 
         icon = new Forms.NotifyIcon { Icon = plain, Text = "Cryptwire", ContextMenuStrip = menu, Visible = true };
         icon.MouseClick += (_, e) =>
@@ -58,11 +61,15 @@ internal sealed class TrayIcon : IDisposable
 
     public event EventHandler? SafeModeRequested;
 
+    /// <summary>Sigilo: encenderlo una hora, o apagarlo si ya estaba.</summary>
+    public event EventHandler? StealthRequested;
+
     public event EventHandler? ExitRequested;
 
-    public void Update(bool safeMode, int unreadCount)
+    public void Update(bool safeMode, bool stealth, int unreadCount)
     {
         safeModeItem.Checked = safeMode;
+        stealthItem.Checked = stealth;
         if (unreadCount == unread)
         {
             return;

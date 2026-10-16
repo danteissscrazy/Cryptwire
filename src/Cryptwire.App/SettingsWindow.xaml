@@ -4,7 +4,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:app="clr-namespace:Cryptwire.App"
         Title="Ajustes de Cryptwire"
-        Width="960" Height="680" MinWidth="880" MinHeight="560"
+        Width="980" Height="800" MinWidth="900" MinHeight="680"
         ShowInTaskbar="False" ResizeMode="CanResize"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource Cw.Panel}"
@@ -18,8 +18,6 @@
     </WindowChrome.WindowChrome>
 
     <Window.Resources>
-        <FontFamily x:Key="MetaFont">pack://application:,,,/Fuentes/#Share Tech Mono</FontFamily>
-        <FontFamily x:Key="TitleFont">pack://application:,,,/Fuentes/#Cinzel</FontFamily>
         <app:OnIfConverter x:Key="OnIf" />
         <BooleanToVisibilityConverter x:Key="Visible" />
 
@@ -48,38 +46,6 @@
             <Setter Property="Height" Value="1" />
             <Setter Property="Fill" Value="{DynamicResource Cw.Line}" />
             <Setter Property="Margin" Value="0,16,0,16" />
-        </Style>
-
-        <!-- Conmutador: pista de hielo con botón de oro cuando está encendido; apagado, gris. -->
-        <Style x:Key="Switch" TargetType="CheckBox">
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Focusable" Value="True" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="CheckBox">
-                        <Grid Width="38" Height="18" Background="Transparent">
-                            <Border x:Name="Track" Background="{DynamicResource Cw.Line}" CornerRadius="2" />
-                            <Border x:Name="Knob" Width="12" Height="12" Margin="3,0" HorizontalAlignment="Left"
-                                    Background="{DynamicResource Cw.Faint}" />
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Track" Property="Background" Value="{DynamicResource Cw.GlowEdge}" />
-                                <Setter TargetName="Knob" Property="Background" Value="{DynamicResource Cw.Accent}" />
-                                <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right" />
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Track" Property="Opacity" Value="0.85" />
-                            </Trigger>
-                            <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource Cw.Glow}" />
-                                <Setter TargetName="Track" Property="BorderThickness" Value="1" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
 
         <!-- Botón fantasma: etiqueta en mono y oro, filo fino; al pasar, brillo de hielo. -->
@@ -190,6 +156,13 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <!-- Carta de modo de widgets: como la de piel, a todo el ancho de su columna. -->
+        <Style x:Key="WidgetCard" TargetType="Button" BasedOn="{StaticResource SkinCard}">
+            <Setter Property="Width" Value="Auto" />
+            <Setter Property="Height" Value="96" />
+            <Setter Property="Margin" Value="0,0,8,0" />
         </Style>
 
         <!-- Chip de chat reciente. -->
@@ -488,6 +461,60 @@
                                            Text="Se guarda una copia reducida y sin datos de la foto." />
                             </StackPanel>
                         </Grid>
+                    </StackPanel>
+
+                    <!-- Widgets: las tres cartas de la maqueta v4, F9 y el paso de panel a barra. -->
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Style="{StaticResource SectionLabel}" app:Letterspace.Text="widgets" />
+                        <UniformGrid Columns="3">
+                            <Button Style="{StaticResource WidgetCard}" Command="{Binding SetWidgetsCommand}" CommandParameter="barra"
+                                    AutomationProperties.Name="Widgets en barra"
+                                    Tag="{Binding WidgetModeName, Converter={StaticResource OnIf}, ConverterParameter=barra}">
+                                <StackPanel>
+                                    <Grid Width="64" Height="34" Margin="0,0,0,6">
+                                        <Border Background="{DynamicResource Cw.Line}" />
+                                        <Border Height="5" VerticalAlignment="Bottom" Background="{DynamicResource Cw.Glow}" />
+                                    </Grid>
+                                    <TextBlock FontFamily="{StaticResource TitleFont}" FontWeight="SemiBold" FontSize="13" HorizontalAlignment="Center"
+                                               Text="Barra" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                    <TextBlock Style="{StaticResource RowHint}" HorizontalAlignment="Center" Text="abajo, una línea" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource WidgetCard}" Command="{Binding SetWidgetsCommand}" CommandParameter="panel"
+                                    AutomationProperties.Name="Widgets en panel"
+                                    Tag="{Binding WidgetModeName, Converter={StaticResource OnIf}, ConverterParameter=panel}">
+                                <StackPanel>
+                                    <Grid Width="64" Height="34" Margin="0,0,0,6">
+                                        <Border Background="{DynamicResource Cw.Line}" />
+                                        <Border Width="14" HorizontalAlignment="Right" Background="{DynamicResource Cw.Glow}" />
+                                    </Grid>
+                                    <TextBlock FontFamily="{StaticResource TitleFont}" FontWeight="SemiBold" FontSize="13" HorizontalAlignment="Center"
+                                               Text="Panel" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                    <TextBlock Style="{StaticResource RowHint}" HorizontalAlignment="Center" Text="a la derecha" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource WidgetCard}" Command="{Binding SetWidgetsCommand}" CommandParameter="ninguno"
+                                    AutomationProperties.Name="Sin widgets"
+                                    Tag="{Binding WidgetModeName, Converter={StaticResource OnIf}, ConverterParameter=ninguno}">
+                                <StackPanel>
+                                    <Grid Width="64" Height="34" Margin="0,0,0,6">
+                                        <Border Background="{DynamicResource Cw.Line}" />
+                                    </Grid>
+                                    <TextBlock FontFamily="{StaticResource TitleFont}" FontWeight="SemiBold" FontSize="13" HorizontalAlignment="Center"
+                                               Text="Ninguno" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                    <TextBlock Style="{StaticResource RowHint}" HorizontalAlignment="Center" Text="solo los chats" />
+                                </StackPanel>
+                            </Button>
+                        </UniformGrid>
+                        <Grid Margin="0,10,0,0">
+                            <StackPanel Margin="0,0,56,0">
+                                <TextBlock Style="{StaticResource RowTitle}" Text="Panel a barra si la ventana es estrecha" />
+                                <TextBlock Style="{StaticResource RowHint}" Text="Por debajo de 1100 px de ancho. Cambia de modo al vuelo con F9." />
+                            </StackPanel>
+                            <CheckBox Style="{StaticResource Switch}" HorizontalAlignment="Right" IsChecked="{Binding PanelToBarWhenNarrow}"
+                                      AutomationProperties.Name="Panel a barra si la ventana es estrecha" />
+                        </Grid>
+                        <Rectangle Style="{StaticResource Divider}" />
                     </StackPanel>
 
                     <StackPanel DockPanel.Dock="Top">

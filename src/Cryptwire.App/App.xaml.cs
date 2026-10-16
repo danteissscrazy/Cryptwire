@@ -6,6 +6,7 @@ using Cryptwire.Core.Permissions;
 using Cryptwire.Core.Settings;
 using Cryptwire.Core.Skins;
 using Cryptwire.Core.Startup;
+using Cryptwire.Core.Widgets;
 using Microsoft.Web.WebView2.Core;
 
 namespace Cryptwire.App;
@@ -78,14 +79,18 @@ public partial class App : Application
             () => new DeliveryContext(
                 skinController.Settings.ShowToasts,
                 WindowActive: main.IsVisible && main.IsActive && main.WindowState != WindowState.Minimized,
-                DesktopNotificationState.Query()));
+                DesktopNotificationState.Query(),
+                Silenced: Stealth.IsOn(skinController.Settings.SilencedUntil, DateTimeOffset.Now)));
         var host = new WhatsAppHost(
             main.WebView, paths, new NavigationPolicy(), new PermissionPolicy(), router, skinController);
+        var widgets = new WidgetsViewModel(skinController, main.Dispatcher);
+        widgets.Ticked += (_, _) => ShowSkinState();
 
         tray = new TrayIcon();
         tray.OpenRequested += (_, _) => main.BringToFront();
         tray.SettingsRequested += (_, _) => ShowSettings();
         tray.SafeModeRequested += async (_, _) => await skinController.ToggleSafeModeAsync();
+        tray.StealthRequested += (_, _) => widgets.StealthOn = !widgets.StealthOn;
         tray.ExitRequested += (_, _) => ExitApp();
 
         skinController.StateChanged += (_, _) => ShowSkinState();
@@ -93,12 +98,16 @@ public partial class App : Application
         {
             unread = count;
             main.ShowUnread(count);
-            tray.Update(skinController.SafeMode, count);
+            widgets.Unread = count;
+            ShowSkinState();
         };
         host.EngineStopped += (_, _) =>
             Fail(main, "El motor del navegador se ha cerrado. Vuelve a abrir Cryptwire.");
 
         main.Bind(skinController);
+        main.ShowWidgets(widgets);
+        main.WidgetModeRequested += async (_, _) =>
+            await skinController.UpdateAsync(s => s with { Widgets = WidgetLayout.Next(s.Widgets) }, refresh: false);
         main.SettingsRequested += (_, _) => ShowSettings();
         main.HideOnClose = () => skinController.Settings.CloseToTray;
         main.HiddenToTray += async (_, _) => await HintTrayOnceAsync(toasts);
@@ -185,7 +194,7 @@ public partial class App : Application
             tray?.ApplyPalette(palette);
         }
 
-        tray?.Update(skins.SafeMode, unread);
+        tray?.Update(skins.SafeMode, Stealth.IsOn(skins.Settings.SilencedUntil, DateTimeOffset.Now), unread);
     }
 
     /// <summary>La primera vez que cierras la ventana, un aviso de que Cryptwire sigue en la bandeja.</summary>

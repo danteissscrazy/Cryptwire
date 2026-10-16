@@ -1,0 +1,67 @@
+<UserControl x:Class="Cryptwire.App.WidgetBar"
+             x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="clr-namespace:Cryptwire.App"
+             Height="32">
+
+    <!-- La barra de widgets de la maqueta v4: una fila fina bajo la conversación. Enlace, Sigilo y Velo a la
+         izquierda; los sin leer y el reloj a la derecha. Los datos, de WidgetsViewModel. -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="Visible" />
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MetaFont}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource Cw.Soft}" />
+        </Style>
+        <Style x:Key="Icon" TargetType="Path">
+            <Setter Property="Width" Value="14" />
+            <Setter Property="Height" Value="14" />
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Stroke" Value="{DynamicResource Cw.Soft}" />
+            <Setter Property="StrokeThickness" Value="1.2" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+        </Style>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource Cw.Background}" BorderBrush="{DynamicResource Cw.Line}" BorderThickness="0,1,0,0">
+        <DockPanel Margin="16,0" LastChildFill="False">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                <Path Data="M5,0 L10,5 L5,10 L0,5 Z" Width="9" Height="9" Stretch="Uniform" VerticalAlignment="Center"
+                      Fill="{DynamicResource Cw.Glow}" Margin="0,0,8,0" />
+                <TextBlock Style="{StaticResource Label}" Foreground="{DynamicResource Cw.Glow}"
+                           app:Letterspace.Text="{Binding LinkLabel}" />
+
+                <Path Style="{StaticResource Icon}" Margin="28,0,8,0"
+                      Data="M9,1 A6.5,6.5 0 1 0 13.5,10.2 A5.2,5.2 0 0 1 9,1 Z" />
+                <TextBlock Style="{StaticResource Label}" app:Letterspace.Text="sigilo" />
+                <CheckBox Style="{StaticResource SmallSwitch}" Margin="10,0,0,0" IsChecked="{Binding StealthOn}"
+                          AutomationProperties.Name="Sigilo" ToolTip="{Binding StealthLabel}" />
+                <TextBlock Style="{StaticResource Label}" Margin="10,0,0,0" FontSize="10.5" Foreground="{DynamicResource Cw.Accent}"
+                           Text="{Binding StealthLabel}" Visibility="{Binding StealthOn, Converter={StaticResource Visible}}" />
+
+                <Path Style="{StaticResource Icon}" Margin="28,0,8,0"
+                      Data="M1,7 C3.5,2.5 10.5,2.5 13,7 C10.5,11.5 3.5,11.5 1,7 Z M7,5 A2,2 0 1 1 6.99,5 Z" />
+                <TextBlock Style="{StaticResource Label}" app:Letterspace.Text="velo" />
+                <CheckBox Style="{StaticResource SmallSwitch}" Margin="10,0,0,0" IsChecked="{Binding VeilOn}"
+                          AutomationProperties.Name="Velo" ToolTip="Difumina los chats hasta pasar el ratón" />
+            </StackPanel>
+
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Visibility="{Binding HasUnread, Converter={StaticResource Visible}}" Margin="0,0,28,0">
+                    <Grid Width="20" Height="20" VerticalAlignment="Center">
+                        <Ellipse Fill="{DynamicResource Cw.Alert}" Stroke="{DynamicResource Cw.Glow}" StrokeThickness="1" />
+                        <TextBlock Text="{Binding UnreadLabel}" FontFamily="Segoe UI" FontWeight="Bold" FontSize="10"
+                                   Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                    <TextBlock Style="{StaticResource Label}" Margin="8,0,0,0" app:Letterspace.Text="sin leer" />
+                </StackPanel>
+                <TextBlock Style="{StaticResource Label}" FontSize="15" Foreground="{DynamicResource Cw.Text}" Text="{Binding Time}" />
+                <TextBlock Style="{StaticResource Label}" Margin="10,1,0,0" Foreground="{DynamicResource Cw.Faint}"
+                           app:Letterspace.Text="{Binding Date}" />
+            </StackPanel>
+        </DockPanel>
+    </Border>
+</UserControl>
