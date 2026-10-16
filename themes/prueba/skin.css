@@ -17,9 +17,14 @@
   background: #05080f url("fondo.svg") center / cover no-repeat !important;
 }
 
-/* El contenedor que la web pinta de color liso deja ver el fondo. */
+/* Pantalla del QR: el contenedor que la web pinta de color liso deja ver el fondo. */
 .app-wrapper-web > div {
   background-color: transparent !important;
+}
+
+/* Conversación abierta: el fondo de la piel en lugar del color liso de la web. */
+#main {
+  background: #05080f url("fondo.svg") center / cover no-repeat !important;
 }
 
 /* Sello: si se ve en la esquina, la inyección funciona. */
