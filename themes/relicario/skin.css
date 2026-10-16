@@ -1,0 +1,667 @@
+/* Cryptwire · Relicario
+   Lo gótico visto a través de un HUD: azul noche, plata, oro y filo de hielo. El retrato de cada chat
+   va dentro de un rosetón de doce lóbulos.
+
+   Tres capas, de más a menos robusta frente a las actualizaciones de WhatsApp Web:
+   1. Paleta. Se reasignan las variables de color de la web (las --WDS-* de su sistema de diseño y
+      las clásicas) desde las nuestras (--cw-*). Si todo lo demás se rompe, esto sigue tiñendo la web.
+   2. Formas y adornos, sobre ganchos estables: id, data-testid, role y aria-*.
+   3. Lado de cada burbuja (enviada o recibida), por la clase atómica con la que la web la pinta. Si
+      cambia, las burbujas conservan los colores y el filo, y pierden solo la diferencia entre lados.
+   Nada de esto añade elementos a la página: solo variables, fondos, recortes, filtros y ::before/::after. */
+
+@font-face {
+  font-family: "Cinzel";
+  src: url("fuentes/Cinzel-VariableFont_wght.ttf") format("truetype");
+  font-weight: 400 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Share Tech Mono";
+  src: url("fuentes/ShareTechMono-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+/* ── 1. Paleta ─────────────────────────────────────────────────────────────────────────────────
+   En <body> y con !important: la web declara sus variables en <html> y en body.dark. */
+body {
+  color-scheme: dark;
+
+  --cw-night-950: #03050b;
+  --cw-night-900: #070c19;
+  --cw-night-800: #0e172c;
+  --cw-night-700: #14203c;
+  --cw-silver-50: #eef1f7;
+  --cw-silver-200: #cdd3e0;
+  --cw-silver-400: #9aa3b8;
+  --cw-silver-600: #677189;
+  --cw-gold-300: #f0d48e;
+  --cw-gold-400: #dcb663;
+  --cw-gold-500: #c39a3e;
+  --cw-ice-300: #9be9ff;
+  --cw-ice-400: #45d4ff;
+  --cw-crimson-400: #e0435a;
+
+  --cw-font-title: "Cinzel", Georgia, serif;
+  --cw-font-body: "Saira", "Bahnschrift", "Segoe UI", sans-serif;
+  --cw-font-meta: "Share Tech Mono", Consolas, monospace;
+  --cw-title-track: .14em;
+  --cw-label-track: .18em;
+
+  --cw-bg-chrome: #02040a;
+  --cw-bg-rail: #050913;
+  --cw-bg-panel: #070c18;
+  --cw-bg-header: #091124;
+  --cw-bg-input: #0b1429;
+  --cw-bg-chat: #050912;
+  --cw-line: rgba(205, 211, 224, .1);
+  --cw-line-strong: rgba(69, 212, 255, .3);
+  --cw-bubble-in: #0b1428;
+  --cw-bubble-out: #13244c;
+  --cw-bubble-in-line: rgba(69, 212, 255, .45);
+  --cw-bubble-out-line: rgba(220, 182, 99, .75);
+
+  --cw-red-orb: radial-gradient(circle at 34% 30%, #ffc2c2 0 7%, #f0475c 24%, #a3132a 62%, #4a0510 100%);
+  --cw-chamfer: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  --cw-chamfer-sm: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  --cw-hatch-gold: repeating-linear-gradient(-45deg, rgba(220, 182, 99, .85) 0 4px, transparent 4px 8px);
+  /* Filo de 1px que sigue cualquier recorte, diagonales incluidas: se pone en el padre del recortado. */
+  --cw-edge-ice: drop-shadow(1px 0 0 var(--cw-line-strong)) drop-shadow(-1px 0 0 var(--cw-line-strong)) drop-shadow(0 1px 0 var(--cw-line-strong)) drop-shadow(0 -1px 0 var(--cw-line-strong));
+
+  --cw-wallpaper:
+    radial-gradient(ellipse 78% 68% at 50% 48%, transparent 32%, rgba(2, 4, 10, .8) 100%),
+    linear-gradient(var(--cw-gold-400) 0 0) left 14px top 14px / 22px 1.5px no-repeat,
+    linear-gradient(var(--cw-gold-400) 0 0) left 14px top 14px / 1.5px 22px no-repeat,
+    linear-gradient(var(--cw-gold-400) 0 0) right 14px bottom 14px / 22px 1.5px no-repeat,
+    linear-gradient(var(--cw-gold-400) 0 0) right 14px bottom 14px / 1.5px 22px no-repeat,
+    url("adornos/radar.svg") center 52% / 560px 560px no-repeat,
+    url("adornos/arcos.svg") 0 0 / 120px 220px,
+    radial-gradient(ellipse 55% 45% at 50% 50%, rgba(30, 134, 200, .12), transparent 72%);
+
+  /* Superficies */
+  --WDS-app-wash: var(--cw-bg-chrome) !important;
+  --WDS-surface-default: var(--cw-bg-panel) !important;
+  --WDS-surface-default-RGB: 7, 12, 24 !important;
+  --WDS-surface-elevated-default: var(--cw-bg-header) !important;
+  --WDS-surface-elevated-default-RGB: 9, 17, 36 !important;
+  --WDS-surface-emphasized: var(--cw-night-800) !important;
+  --WDS-surface-emphasized-RGB: 14, 23, 44 !important;
+  --WDS-surface-elevated-emphasized: var(--cw-night-700) !important;
+  --WDS-surface-elevated-emphasized-RGB: 20, 32, 60 !important;
+  --WDS-surface-highlight: rgba(69, 212, 255, .07) !important;
+  --WDS-surface-highlight-RGB: 69, 212, 255 !important;
+  --WDS-surface-pressed: rgba(69, 212, 255, .14) !important;
+  --WDS-surface-pressed-RGB: 69, 212, 255 !important;
+  --WDS-background-wash-plain: var(--cw-bg-panel) !important;
+  --WDS-background-wash-plain-RGB: 7, 12, 24 !important;
+  --WDS-background-wash-inset: var(--cw-bg-panel) !important;
+  --WDS-background-wash-inset-RGB: 7, 12, 24 !important;
+  --WDS-background-elevated-wash-plain: var(--cw-bg-header) !important;
+  --WDS-background-elevated-wash-plain-RGB: 9, 17, 36 !important;
+  --WDS-background-elevated-wash-inset: var(--cw-bg-header) !important;
+  --WDS-background-elevated-wash-inset-RGB: 9, 17, 36 !important;
+  --WDS-components-surface-nav-bar: var(--cw-bg-rail) !important;
+  --WDS-components-surface-nav-bar-RGB: 5, 9, 19 !important;
+  --WDS-components-active-list-row: rgba(69, 212, 255, .1) !important;
+  --WDS-components-filter-surface-selected: #2b210c !important;
+  --WDS-components-filter-surface-selected-RGB: 43, 33, 12 !important;
+  --WDS-components-outline-profile-photo: rgba(69, 212, 255, .3) !important;
+
+  /* Texto e iconos */
+  --WDS-content-default: var(--cw-silver-50) !important;
+  --WDS-content-default-RGB: 238, 241, 247 !important;
+  --WDS-content-action-default: var(--cw-silver-50) !important;
+  --WDS-content-action-default-RGB: 238, 241, 247 !important;
+  --WDS-content-deemphasized: var(--cw-silver-400) !important;
+  --WDS-content-deemphasized-RGB: 154, 163, 184 !important;
+  --WDS-content-disabled: var(--cw-silver-600) !important;
+  --WDS-content-disabled-RGB: 103, 113, 137 !important;
+  --WDS-content-action-emphasized: var(--cw-gold-400) !important;
+  --WDS-content-action-emphasized-RGB: 220, 182, 99 !important;
+  --WDS-content-external-link: var(--cw-ice-400) !important;
+  --WDS-content-external-link-RGB: 69, 212, 255 !important;
+  /* El doble check de leído, en oro. */
+  --WDS-content-read: var(--cw-gold-400) !important;
+  --WDS-content-read-RGB: 220, 182, 99 !important;
+  --WDS-content-on-accent: var(--cw-night-950) !important;
+  --WDS-content-on-accent-RGB: 3, 5, 11 !important;
+
+  /* Acento: el verde de WhatsApp pasa a oro; la actividad, a carmesí. */
+  --WDS-accent: var(--cw-gold-400) !important;
+  --WDS-accent-RGB: 220, 182, 99 !important;
+  --WDS-accent-deemphasized: #2b210c !important;
+  --WDS-accent-deemphasized-RGB: 43, 33, 12 !important;
+  --WDS-accent-emphasized: var(--cw-gold-300) !important;
+  --WDS-accent-emphasized-RGB: 240, 212, 142 !important;
+  --WDS-persistent-always-branded: var(--cw-gold-400) !important;
+  --WDS-persistent-always-branded-RGB: 220, 182, 99 !important;
+  --WDS-persistent-activity-indicator: var(--cw-crimson-400) !important;
+  --WDS-persistent-activity-indicator-RGB: 224, 67, 90 !important;
+
+  /* Líneas */
+  --WDS-lines-divider: var(--cw-line) !important;
+  --WDS-lines-divider-RGB: 205, 211, 224 !important;
+  --WDS-lines-outline-default: var(--cw-line-strong) !important;
+  --WDS-lines-outline-default-RGB: 69, 212, 255 !important;
+  --WDS-lines-outline-deemphasized: var(--cw-line) !important;
+
+  /* Conversación */
+  --WDS-systems-bubble-surface-incoming: var(--cw-bubble-in) !important;
+  --WDS-systems-bubble-surface-incoming-RGB: 11, 20, 40 !important;
+  --WDS-systems-bubble-surface-outgoing: var(--cw-bubble-out) !important;
+  --WDS-systems-bubble-surface-outgoing-RGB: 19, 36, 76 !important;
+  --WDS-systems-bubble-surface-system: var(--cw-night-900) !important;
+  --WDS-systems-bubble-surface-system-RGB: 7, 12, 25 !important;
+  --WDS-systems-bubble-surface-e2e: #161106 !important;
+  --WDS-systems-bubble-surface-e2e-RGB: 22, 17, 6 !important;
+  --WDS-systems-bubble-content-e2e: var(--cw-gold-300) !important;
+  --WDS-systems-bubble-content-e2e-RGB: 240, 212, 142 !important;
+  --WDS-systems-bubble-content-deemphasized: var(--cw-silver-400) !important;
+  --WDS-systems-bubble-content-deemphasized-RGB: 154, 163, 184 !important;
+  --WDS-systems-chat-background-wallpaper: var(--cw-bg-chat) !important;
+  --WDS-systems-chat-background-wallpaper-RGB: 5, 9, 18 !important;
+  /* El dibujo de fondo de WhatsApp desaparece: el fondo es el radar. */
+  --WDS-systems-chat-foreground-wallpaper: transparent !important;
+  --WDS-systems-chat-surface-composer: var(--cw-bg-input) !important;
+  --WDS-systems-chat-surface-composer-RGB: 11, 20, 41 !important;
+  --WDS-systems-chat-surface-tray: var(--cw-bg-header) !important;
+  --WDS-systems-chat-surface-tray-RGB: 9, 17, 36 !important;
+  --WDS-systems-status-seen: var(--cw-silver-600) !important;
+
+  /* Variables clásicas que aún usan partes de la web */
+  --app-background: var(--cw-bg-chrome) !important;
+  --app-background-deeper: var(--cw-night-950) !important;
+  --navbar-background: var(--cw-bg-rail) !important;
+  --panel-background: var(--cw-bg-panel) !important;
+  --panel-background-rgb: 7, 12, 24 !important;
+  --panel-background-deep: var(--cw-bg-chrome) !important;
+  --panel-input-background: var(--cw-bg-input) !important;
+  --primary: var(--cw-silver-50) !important;
+  --primary-strong: var(--cw-silver-50) !important;
+  --primary-stronger: var(--cw-silver-50) !important;
+  --message-primary: var(--cw-silver-50) !important;
+  --text-primary-strong: var(--cw-silver-50) !important;
+  --secondary: var(--cw-silver-400) !important;
+  --secondary-lighter: var(--cw-silver-400) !important;
+  --secondary-stronger: var(--cw-silver-400) !important;
+  --text-muted: var(--cw-silver-400) !important;
+  --bubble-meta: var(--cw-silver-400) !important;
+  --bubble-meta-icon: var(--cw-silver-400) !important;
+  --icon: var(--cw-silver-400) !important;
+  --icon-primary: var(--cw-gold-400) !important;
+  --icon-high-emphasis: var(--cw-gold-400) !important;
+  --icon-ack: var(--cw-gold-400) !important;
+  --text-action: var(--cw-gold-400) !important;
+  --input-border: var(--cw-line-strong) !important;
+  --input-border-active: var(--cw-ice-400) !important;
+  --button-alternative: var(--cw-gold-400) !important;
+  --badge-pending: var(--cw-gold-500) !important;
+  --link-rgb: 69, 212, 255 !important;
+  --border-bubble: transparent !important;
+  --status-ring-unread: var(--cw-crimson-400) !important;
+  --ptt-thumb-outgoing-unplayed: var(--cw-gold-400) !important;
+  --ptt-thumb-incoming-unplayed: var(--cw-gold-400) !important;
+  --ptt-waveform-outgoing-unplayed: var(--cw-silver-600) !important;
+  --ptt-waveform-incoming-unplayed: var(--cw-silver-600) !important;
+  --ptt-waveform-outgoing-played: var(--cw-gold-400) !important;
+  --ptt-waveform-incoming-played: var(--cw-gold-400) !important;
+
+  background: var(--cw-bg-chrome) !important;
+}
+
+/* ── 2. Formas y adornos ──────────────────────────────────────────────────────────────────────── */
+
+/* Tipografía: Saira (o Bahnschrift) para leer, Cinzel para nombres, Share Tech Mono para horas y
+   etiquetas. El código monoespaciado de los mensajes conserva su fuente. */
+#app,
+#app :not(code, pre, code *, pre *) {
+  font-family: var(--cw-font-body) !important;
+}
+
+#app * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cw-line-strong) transparent;
+}
+
+/* Raíl de la izquierda: regla dorada en el borde y el botón activo con filo de hielo. */
+header:has([data-testid="navbar-primary-section"]) {
+  background:
+    repeating-linear-gradient(0deg, rgba(220, 182, 99, .35) 0 1px, transparent 1px 14px) right 3px top 0 / 4px 100% no-repeat,
+    var(--cw-bg-rail) !important;
+  border-right: 1px solid var(--cw-line) !important;
+}
+
+div:has(> button[data-navbar-item-selected="true"]) {
+  background: rgba(69, 212, 255, .1) !important;
+  border-radius: 0 !important;
+  clip-path: var(--cw-chamfer);
+  box-shadow: inset 2px 0 0 var(--cw-ice-400);
+}
+
+button[data-navbar-item-selected="true"] {
+  border-radius: 0 !important;
+  color: var(--cw-ice-400) !important;
+}
+
+/* Contadores: orbes rojos con anillo de hielo. El anillo va por dentro y sin halo exterior: las filas
+   de la lista recortan lo que sobresale de su caja y lo cortarían en seco. */
+header:has([data-testid="navbar-primary-section"]) [role="status"],
+#pane-side [data-testid="icon-unread-count"] {
+  background: var(--cw-red-orb) !important;
+  color: #fff4f4 !important;
+  font-family: var(--cw-font-meta) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(69, 212, 255, .8), inset 0 -3px 6px rgba(74, 5, 16, .35) !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .4);
+}
+
+/* Cabecera de la lista: «◆ CHATS // ENLACES» en lugar del logotipo. */
+[data-testid="wa-wordmark"] {
+  display: flex !important;
+  align-items: baseline;
+  gap: 12px;
+}
+
+[data-testid="wa-wordmark"] > * {
+  display: none !important;
+}
+
+[data-testid="wa-wordmark"]::before {
+  content: "Chats";
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 700 21px/1.1 var(--cw-font-title);
+  letter-spacing: var(--cw-title-track);
+  text-transform: uppercase;
+  color: var(--cw-silver-50);
+}
+
+[data-testid="wa-wordmark"]::after {
+  content: "// enlaces";
+  font: 400 11px/1 var(--cw-font-meta);
+  letter-spacing: var(--cw-label-track);
+  text-transform: uppercase;
+  color: var(--cw-ice-400);
+}
+
+header:has([data-testid="wa-wordmark"]) {
+  background:
+    linear-gradient(var(--cw-ice-400) 0 0) left 20px bottom 3px / 40px 1.5px no-repeat,
+    linear-gradient(90deg, rgba(220, 182, 99, .45), transparent) left 66px bottom 3px / 55% 1px no-repeat,
+    var(--cw-bg-panel) !important;
+}
+
+header:has([data-testid="wa-wordmark"]) h2::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 14px;
+  align-self: center;
+  background: var(--cw-crimson-400);
+  transform: rotate(45deg);
+  box-shadow: 0 0 8px rgba(240, 71, 92, .8);
+}
+
+header:has([data-testid="wa-wordmark"]) h2 {
+  display: flex !important;
+  align-items: center;
+}
+
+/* Nuevo chat: bloque de oro recortado, como el botón de enviar. */
+header:has([data-testid="wa-wordmark"]) button:not([aria-haspopup]) {
+  border-radius: 0 !important;
+  clip-path: var(--cw-chamfer-sm);
+  background: linear-gradient(160deg, var(--cw-gold-300), var(--cw-gold-500)) !important;
+  color: var(--cw-night-950) !important;
+}
+
+/* Buscador: caja de esquinas cortadas con filo de hielo. */
+[data-testid="chat-list-search-container"] div:has(> div > div > input),
+[data-testid="chat-list-search-container"] div:has(> div > input) {
+  filter: var(--cw-edge-ice);
+}
+
+[data-testid="chat-list-search-container"] div:has(> div > input) {
+  background: var(--cw-bg-input) !important;
+  border-radius: 0 !important;
+  clip-path: var(--cw-chamfer);
+}
+
+[data-testid="chat-list-search-container"] input::placeholder {
+  font-style: italic;
+  color: var(--cw-silver-600);
+}
+
+/* Filtros: placas recortadas; la elegida, en oro. */
+#side [role="tablist"] button {
+  border-radius: 0 !important;
+  clip-path: var(--cw-chamfer-sm);
+  background: rgba(69, 212, 255, .08) !important;
+  color: var(--cw-silver-400) !important;
+}
+
+#side [role="tablist"] button[aria-selected="true"] {
+  background: linear-gradient(180deg, #3a2c10, #2b210c) !important;
+  color: var(--cw-gold-300) !important;
+  box-shadow: inset 0 0 0 1px var(--cw-gold-400);
+  font-weight: 600 !important;
+}
+
+/* Lista de chats */
+#pane-side [data-testid="cell-frame-container"] {
+  border-radius: 0 !important;
+}
+
+#pane-side [data-testid="cell-frame-title"] span {
+  font-family: var(--cw-font-title) !important;
+  font-weight: 600 !important;
+  letter-spacing: .04em;
+}
+
+#pane-side [data-testid="chat-list-timestamp"],
+#pane-side [data-testid="chat-list-timestamp"] * {
+  font-family: var(--cw-font-meta) !important;
+  font-size: 11.5px !important;
+  font-variant-numeric: tabular-nums;
+  color: var(--cw-silver-600) !important;
+}
+
+#pane-side [data-testid="cell-frame-container"]:has([data-testid="icon-unread-count"]) [data-testid="chat-list-timestamp"],
+#pane-side [data-testid="cell-frame-container"]:has([data-testid="icon-unread-count"]) [data-testid="chat-list-timestamp"] * {
+  color: var(--cw-gold-400) !important;
+}
+
+/* Chat abierto: barrido de hielo a carmesí, barra carmesí y escuadras de fijación. */
+#pane-side [aria-selected="true"] > [data-testid="cell-frame-container"] {
+  background:
+    linear-gradient(var(--cw-ice-400) 0 0) right 6px top 5px / 12px 1.5px no-repeat,
+    linear-gradient(var(--cw-ice-400) 0 0) right 6px top 5px / 1.5px 12px no-repeat,
+    linear-gradient(var(--cw-ice-400) 0 0) right 6px bottom 5px / 12px 1.5px no-repeat,
+    linear-gradient(var(--cw-ice-400) 0 0) right 6px bottom 5px / 1.5px 12px no-repeat,
+    linear-gradient(90deg, rgba(69, 212, 255, .12), rgba(184, 36, 58, .08) 55%, rgba(69, 212, 255, 0)) !important;
+}
+
+#pane-side [aria-selected="true"] > [data-testid="cell-frame-container"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  background: var(--cw-crimson-400);
+  box-shadow: 0 0 12px rgba(240, 71, 92, .7);
+  z-index: 1;
+}
+
+/* Relicario: el retrato, más pequeño, dentro del rosetón. Sin leer, lóbulos carmesí; abierto,
+   lóbulos de hielo y el borde girando despacio. */
+#pane-side [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg)),
+#main header div:has(> img) {
+  position: relative;
+  overflow: visible !important;
+}
+
+#pane-side [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg)) > :is(img, span),
+#main header div:has(> img) > img {
+  transform: scale(.82);
+  box-shadow: 0 0 0 1px rgba(69, 212, 255, .4);
+  border-radius: 50%;
+}
+
+#pane-side [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg))::after,
+#main header div:has(> img)::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  pointer-events: none;
+  background: url("adornos/roseton.svg") center / 100% 100% no-repeat;
+}
+
+#pane-side [data-testid="cell-frame-container"]:has([data-testid="icon-unread-count"]) > div:first-child div:is(:has(> img), :has(> span > svg))::after {
+  background-image: url("adornos/roseton-sin-leer.svg");
+  filter: drop-shadow(0 0 4px rgba(240, 71, 92, .55));
+}
+
+#pane-side [aria-selected="true"] > [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg))::after,
+#main header div:has(> img)::after {
+  background-image: url("adornos/roseton-activo.svg");
+  filter: drop-shadow(0 0 5px rgba(69, 212, 255, .6));
+}
+
+#pane-side [aria-selected="true"] > [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg))::after {
+  animation: cw-spin 30s linear infinite;
+}
+
+/* El botón de archivados no es un chat: sin rosetón. */
+[data-testid="chatlist-panel-archived-button"] div::after {
+  content: none !important;
+}
+
+[data-testid="chatlist-panel-archived-button"] div > span {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Cabecera de la conversación: nombre en Cinzel, estado en mono de hielo, filo oro y hielo abajo. */
+#main header[data-testid="conversation-header"] {
+  background:
+    linear-gradient(var(--cw-gold-400) 0 0) center bottom 0 / 80px 2px no-repeat,
+    linear-gradient(90deg, transparent, rgba(69, 212, 255, .45) 30%, rgba(69, 212, 255, .45) 70%, transparent) center bottom 0 / 100% 1px no-repeat,
+    var(--cw-bg-header) !important;
+}
+
+#main [data-testid="conversation-info-header-chat-title"] {
+  font-family: var(--cw-font-title) !important;
+  font-weight: 700 !important;
+  font-size: 17px !important;
+  letter-spacing: var(--cw-title-track);
+  text-transform: uppercase;
+}
+
+#main [data-testid="chat-subtitle"],
+#main [data-testid="chat-subtitle"] * {
+  font-family: var(--cw-font-meta) !important;
+  font-size: 12px !important;
+  letter-spacing: .08em;
+  color: var(--cw-ice-400) !important;
+}
+
+/* Fondo de la conversación: radar de rosetón, arcos ojivales y escuadras; un anillo gira detrás. */
+#main {
+  position: relative;
+  isolation: isolate;
+  background: var(--cw-wallpaper), var(--cw-bg-chat) !important;
+}
+
+#main::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  left: 50%;
+  top: 52%;
+  width: 560px;
+  height: 560px;
+  margin: -280px 0 0 -280px;
+  background: url("adornos/anillo.svg") center / contain no-repeat;
+  animation: cw-spin 90s linear infinite;
+}
+
+#main [data-testid^="conversation-background"] {
+  opacity: 0 !important;
+}
+
+/* Chips de fecha y avisos del sistema: placas de mono con marcas de hielo. */
+[data-testid="conversation-panel-messages"] > div > div:not(:has([role="row"])) > div:has(> span) {
+  border-radius: 0 !important;
+  clip-path: var(--cw-chamfer-sm);
+  background: var(--cw-night-900) !important;
+  box-shadow: inset 0 0 0 1px rgba(69, 212, 255, .3);
+  padding-inline: 16px !important;
+}
+
+[data-testid="conversation-panel-messages"] > div > div:not(:has([role="row"])) > div:has(> span) span {
+  font-family: var(--cw-font-meta) !important;
+  font-size: 11.5px !important;
+  letter-spacing: var(--cw-label-track);
+  text-transform: uppercase;
+  color: var(--cw-ice-300) !important;
+}
+
+[data-testid="conversation-panel-messages"] > div > div:not(:has([role="row"])):has(> div > span)::before,
+[data-testid="conversation-panel-messages"] > div > div:not(:has([role="row"])):has(> div > span)::after {
+  content: "";
+  flex: 1;
+  height: 14px;
+  align-self: center;
+  margin-inline: 12px;
+  background:
+    linear-gradient(90deg, transparent, rgba(220, 182, 99, .5)) left center / calc(100% - 12px) 1px no-repeat,
+    linear-gradient(var(--cw-ice-400) 0 0) right 2px center / 6px 6px no-repeat;
+}
+
+[data-testid="conversation-panel-messages"] > div > div:not(:has([role="row"])):has(> div > span)::after {
+  transform: scaleX(-1);
+}
+
+[data-testid="conversation-panel-messages"] > div > div:not(:has([role="row"])):has(> div > span) {
+  display: flex !important;
+  align-items: center;
+}
+
+/* Aviso de cifrado: cartela dorada con rayado. */
+[data-testid="conversation-panel-messages"] > div > button {
+  position: relative;
+  border-radius: 0 !important;
+  clip-path: var(--cw-chamfer-sm);
+  background: #161106 !important;
+  box-shadow: inset 0 0 0 1px rgba(220, 182, 99, .35);
+  color: var(--cw-gold-300) !important;
+  padding-left: 22px !important;
+}
+
+[data-testid="conversation-panel-messages"] > div > button::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  bottom: 1px;
+  width: 10px;
+  background: var(--cw-hatch-gold);
+}
+
+[data-testid="conversation-panel-messages"] > div > button * {
+  color: var(--cw-gold-300) !important;
+}
+
+/* Burbujas: esquinas cortadas, filo de 1px que sigue el recorte, brillo suave y filigrana dorada. */
+[data-testid="msg-container"] {
+  border-radius: 0 !important;
+  filter:
+    drop-shadow(1px 0 0 var(--cw-bubble-in-line)) drop-shadow(-1px 0 0 var(--cw-bubble-in-line))
+    drop-shadow(0 1px 0 var(--cw-bubble-in-line)) drop-shadow(0 -1px 0 var(--cw-bubble-in-line))
+    drop-shadow(0 0 6px rgba(69, 212, 255, .18));
+}
+
+[data-testid="msg-container"] > span[data-icon^="tail"] {
+  display: none !important;
+}
+
+[data-testid="msg-container"] > div:first-of-type {
+  position: relative;
+  border-radius: 0 !important;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 12px);
+}
+
+[data-testid="msg-container"] > div:first-of-type::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  background: url("adornos/filigrana.svg") center / 100% 100% no-repeat;
+  transform: scaleX(-1);
+}
+
+[data-testid="msg-meta"],
+[data-testid="msg-meta"] * {
+  font-family: var(--cw-font-meta) !important;
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cita: barra de oro y velo de hielo. */
+[data-testid="quoted-message"] {
+  border-radius: 0 !important;
+  background: rgba(69, 212, 255, .06) !important;
+  box-shadow: inset 3px 0 0 var(--cw-gold-400);
+}
+
+/* Compositor: bandeja con regla dorada, caja recortada con cursor de oro y botón de oro. */
+#main footer {
+  background:
+    repeating-linear-gradient(90deg, rgba(220, 182, 99, .35) 0 1px, transparent 1px 12px) left top / 100% 4px no-repeat,
+    var(--cw-bg-header) !important;
+  border-top: 1px solid var(--cw-line);
+}
+
+[data-testid="compose-box"] div:has(> div[tabindex="-1"]) {
+  filter: var(--cw-edge-ice);
+}
+
+[data-testid="compose-box"] div[tabindex="-1"] {
+  border-radius: 0 !important;
+  clip-path: var(--cw-chamfer);
+}
+
+[data-testid="conversation-compose-box-input"] {
+  caret-color: var(--cw-gold-400);
+}
+
+[data-testid="compose-box"] div[tabindex="-1"] > div:last-child {
+  border-radius: 0 !important;
+  clip-path: var(--cw-chamfer-sm);
+  background: linear-gradient(160deg, var(--cw-gold-300), var(--cw-gold-500)) !important;
+}
+
+[data-testid="compose-box"] div[tabindex="-1"] > div:last-child button {
+  color: var(--cw-night-950) !important;
+  background: transparent !important;
+}
+
+/* ── 3. Lado de cada burbuja ──────────────────────────────────────────────────────────────────
+   .x1g5lz36 pinta las enviadas (background-color: var(--WDS-systems-bubble-surface-outgoing)) y
+   .x1ew7x2d las recibidas. Las enviadas llevan filo de oro y el corte al otro lado. */
+[data-testid="msg-container"]:has(> .x1g5lz36) {
+  filter:
+    drop-shadow(1px 0 0 var(--cw-bubble-out-line)) drop-shadow(-1px 0 0 var(--cw-bubble-out-line))
+    drop-shadow(0 1px 0 var(--cw-bubble-out-line)) drop-shadow(0 -1px 0 var(--cw-bubble-out-line))
+    drop-shadow(0 0 7px rgba(220, 182, 99, .22));
+}
+
+[data-testid="msg-container"] > .x1g5lz36 {
+  background: linear-gradient(180deg, #162a57, #101f42) !important;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+
+[data-testid="msg-container"] > .x1g5lz36::after {
+  right: auto;
+  left: 3px;
+  transform: none;
+}
+
+/* ── Movimiento ───────────────────────────────────────────────────────────────────────────────── */
+@keyframes cw-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #main::before,
+  #pane-side [data-testid="cell-frame-container"] div::after {
+    animation: none !important;
+  }
+}
