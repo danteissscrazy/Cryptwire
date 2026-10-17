@@ -151,9 +151,9 @@ dentro el instalador de WebView2 de Microsoft (lo descarga y comprueba que lo fi
 comprimir nada, ni los ficheros ni la cabecera (textos, código y lista de ficheros), para que el escáner
 lea el instalador entero, y después comprimido. El resultado queda en `artifacts/instalador`.
 
-La CI de GitHub (`.github/workflows/ci.yml`) hace lo mismo en cada push a `main` y en cada pull request,
-y deja el instalador como artefacto. Allí no hay reglas de datos personales: el escáner avisa y sigue con
-las de secretos y las de rutas.
+La CI de GitHub (`.github/workflows/ci.yml`) hace lo mismo en cada push a `main` o a una rama `fase-*` y
+en cada pull request, y deja el instalador como artefacto. Allí no hay reglas de datos personales: el
+escáner avisa y sigue con las de secretos y las de rutas.
 
 ## Estructura
 

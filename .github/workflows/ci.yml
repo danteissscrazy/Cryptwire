@@ -1,4 +1,5 @@
-# Cada push a main y cada pull request: historial sin secretos, tests, publicación escaneada e instalador.
+# Cada push a main o a una rama de fase y cada pull request: historial sin secretos, tests, publicación
+# escaneada e instalador.
 # Lo mismo que hace tools\empaquetar.ps1 en local, en una máquina limpia de GitHub.
 #
 # - Sin las reglas de datos personales: viven fuera del repo y no se suben ni como secreto. Lo que llega
@@ -9,7 +10,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "fase-*"]
   pull_request:
   workflow_dispatch:
 
