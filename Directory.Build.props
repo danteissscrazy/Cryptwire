@@ -5,6 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
+    <!-- packages.lock.json fija la versión y el hash de cada paquete: si NuGet sirve otro contenido, la
+         restauración falla (NU1403). Los avisos de vulnerabilidad (NuGetAudit) ya son errores por
+         TreatWarningsAsErrors. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <Authors>Cryptwire contributors</Authors>
     <Company>Cryptwire</Company>
   </PropertyGroup>
