@@ -34,6 +34,7 @@ VersionInfoDescription=Instalador de Cryptwire
 PrivilegesRequired=lowest
 DefaultDirName={autopf}\Cryptwire
 DisableDirPage=yes
+DisableWelcomePage=no
 DefaultGroupName=Cryptwire
 DisableProgramGroupPage=yes
 ArchitecturesAllowed=x64os
@@ -42,8 +43,14 @@ MinVersion=10.0.17763
 SetupIconFile=..\src\Cryptwire.App\Assets\logo.ico
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName=Cryptwire
+; Oscuro y con los colores del Relicario. Las imágenes salen de tools\generar-imagenes-instalador.ps1.
 WizardStyle=modern dark
 WizardSizePercent=110
+WizardBackColor=#070C19
+WizardImageBackColor=#070C19
+WizardSmallImageBackColor=#070C19
+WizardImageFile=imagenes\lateral-164.png,imagenes\lateral-328.png
+WizardSmallImageFile=imagenes\cabecera-55.png,imagenes\cabecera-110.png
 ShowLanguageDialog=no
 OutputDir={#Salida}
 OutputBaseFilename=Cryptwire-{#Version}-instalador
@@ -61,10 +68,30 @@ SolidCompression=yes
 Name: "es"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [Messages]
-WelcomeLabel2=Esto instalará [name/ver] para tu usuario de Windows, sin pedir permisos de administrador.%n%nCryptwire es un cliente de escritorio para WhatsApp Web. Proyecto independiente, sin relación con WhatsApp ni con Meta.
-FinishedLabel=Cryptwire está instalada. Al abrirla, vincúlala con tu móvil: en WhatsApp, Dispositivos vinculados › Vincular un dispositivo, y escanea el código QR. Cada PC se vincula por separado.
-FinishedLabelNoIcons=Cryptwire está instalada. Al abrirla, vincúlala con tu móvil: en WhatsApp, Dispositivos vinculados › Vincular un dispositivo, y escanea el código QR. Cada PC se vincula por separado.
+; De tú, como la app: los textos de las páginas que se ven al instalar y desinstalar.
+WelcomeLabel1=[name/ver]
+WelcomeLabel2=Esto instalará Cryptwire para tu usuario de Windows, sin pedir permisos de administrador.%n%nCryptwire es un cliente de escritorio para WhatsApp Web. Proyecto independiente, sin relación con WhatsApp ni con Meta.
+ClickNext=Pulsa Siguiente para continuar o Cancelar para salir.
+WizardSelectTasks=Tareas adicionales
+SelectTasksDesc=¿Algo más?
+SelectTasksLabel2=Elige qué más quieres y pulsa Siguiente.
+WizardReady=Todo listo
+ReadyLabel1=Cryptwire está lista para instalarse.
+ReadyLabel2a=Pulsa Instalar para seguir, o Atrás para cambiar algo.
+ReadyLabel2b=Pulsa Instalar para seguir.
+ReadyMemoDir=Carpeta:
+ReadyMemoTasks=Además:
+WizardPreparing=Preparando la instalación
+PreparingDesc=Preparando la instalación de Cryptwire.
+InstallingLabel=Espera mientras se instala Cryptwire.
+FinishedHeadingLabel=Cryptwire está instalada
+FinishedLabel=Al abrirla, vincúlala con tu móvil: en WhatsApp, Dispositivos vinculados › Vincular un dispositivo, y escanea el código QR. Cada PC se vincula por separado.
+FinishedLabelNoIcons=Al abrirla, vincúlala con tu móvil: en WhatsApp, Dispositivos vinculados › Vincular un dispositivo, y escanea el código QR. Cada PC se vincula por separado.
+ClickFinish=Pulsa Finalizar para cerrar el asistente.
+ExitSetupMessage=La instalación no ha terminado: si sales ahora, Cryptwire no se instala.%n%n¿Salir?
 ConfirmUninstall=¿Desinstalar %1? Tus datos (la sesión de WhatsApp y tus ajustes) se quedan, salvo que digas lo contrario al terminar.
+UninstallStatusLabel=Espera mientras se desinstala %1.
+UninstalledAll=%1 se ha desinstalado.
 
 [Tasks]
 Name: "escritorio"; Description: "Crear un acceso directo en el escritorio"; Flags: unchecked

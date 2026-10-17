@@ -163,5 +163,5 @@ las de secretos y las de rutas.
 | `src/Cryptwire.Core` | La lógica sin interfaz: navegación, avisos y tonos, pieles, fondos, ajustes, inicio. Probada con tests |
 | `tests/Cryptwire.Core.Tests` | Tests unitarios de `Core` (xUnit) |
 | `themes/` | Las pieles: CSS más sus fondos, fuentes y tonos. Ver `LICENCIAS.md` en cada una |
-| `installer/` | El instalador de Inno Setup (`Cryptwire.iss`) |
+| `installer/` | El instalador de Inno Setup (`Cryptwire.iss`) y las imágenes del asistente (`tools/generar-imagenes-instalador.ps1`) |
 | `tools/` | Scripts auxiliares: publicar, escanear lo publicado y empaquetar (`publicar.ps1`, `escanear-binario.ps1`, `probar-escaner.ps1`, `empaquetar.ps1`), los tonos (`generar-tono-prueba.py`, `generar-tono-llamada.py`), el icono (`generar-iconos.ps1`, desde `src/Cryptwire.App/Assets/logo.svg`), la marca de la barra de título (`generar-marca.ps1`) y la Cinzel fija de la ventana (`generar-cinzel-estatica.py`) |
