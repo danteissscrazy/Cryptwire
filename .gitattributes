@@ -1,6 +1,6 @@
-* text=auto
-.githooks/* text eol=lf
-*.sh text eol=lf
+# Texto siempre en LF, también en Windows: los finales de línea cambian el .dll (cadenas de varias líneas,
+# sumas del .pdb) y las pieles, y el mismo commit tiene que dar el mismo binario en cualquier máquina.
+* text=auto eol=lf
 
 *.png binary
 *.jpg binary
