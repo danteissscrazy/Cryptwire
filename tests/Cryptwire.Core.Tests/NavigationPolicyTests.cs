@@ -89,6 +89,32 @@ public class NavigationPolicyTests
         Assert.Equal(NavigationDecision.Block, policy.DecideFrame(url));
 
     [Theory]
+    [InlineData("blob:https://web.whatsapp.com/5f2c1a0e-8d3b-4c7a-9e61-0b2d4f6a8c13")]
+    [InlineData("BLOB:https://WEB.WHATSAPP.COM/5f2c1a0e-8d3b-4c7a-9e61-0b2d4f6a8c13")]
+    public void DownloadsPreparedByWhatsAppAreAllowed(string url) =>
+        Assert.Equal(NavigationDecision.Allow, policy.DecideDownload(url));
+
+    [Theory]
+    [InlineData("blob:https://web.whatsapp.com.evil.example/5f2c1a0e")]
+    [InlineData("blob:https://evil.example/5f2c1a0e")]
+    [InlineData("blob:http://web.whatsapp.com/5f2c1a0e")]
+    [InlineData("blob:https://web.whatsapp.com:8443/5f2c1a0e")]
+    [InlineData("blob:https://usuario@web.whatsapp.com/5f2c1a0e")]
+    [InlineData("blob:null/5f2c1a0e")]
+    [InlineData("blob:")]
+    [InlineData("data:https://web.whatsapp.com/5f2c1a0e")]
+    [InlineData("https://web.whatsapp.com/descarga.exe")]
+    [InlineData("https://mmg.whatsapp.net/v/t62/archivo.enc")]
+    [InlineData("https://evil.example/programa.exe")]
+    [InlineData("data:application/octet-stream;base64,TVo=")]
+    [InlineData("file:///C:/Windows/win.ini")]
+    [InlineData("no es una url")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void AnyOtherDownloadIsCancelled(string? url) =>
+        Assert.Equal(NavigationDecision.Block, policy.DecideDownload(url));
+
+    [Theory]
     [InlineData("https://web.whatsapp.com", true)]
     [InlineData("https://web.whatsapp.com/", true)]
     [InlineData("https://web.whatsapp.com.evil.example", false)]

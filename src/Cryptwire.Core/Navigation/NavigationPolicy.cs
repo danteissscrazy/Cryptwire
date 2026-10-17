@@ -41,6 +41,23 @@ public sealed class NavigationPolicy
             : NavigationDecision.Block;
 
     /// <summary>
+    /// Descargas: solo las que prepara la propia WhatsApp Web. Lo que bajas de un chat (fotos, vídeos,
+    /// documentos) lo descifra la página y lo entrega como <c>blob:https://web.whatsapp.com/…</c>; un
+    /// <c>blob:</c> lleva el origen de quien lo creó. Cualquier otra descarga (un marco de otra web, un enlace
+    /// directo, un <c>data:</c>) se cancela.
+    /// </summary>
+    public NavigationDecision DecideDownload(string? url)
+    {
+        const string blob = "blob:";
+        return url is not null
+            && url.StartsWith(blob, StringComparison.OrdinalIgnoreCase)
+            && Uri.TryCreate(url[blob.Length..], UriKind.Absolute, out var origin)
+            && IsWhatsApp(origin)
+                ? NavigationDecision.Allow
+                : NavigationDecision.Block;
+    }
+
+    /// <summary>
     /// True solo para <c>https://web.whatsapp.com</c> en su puerto por defecto. Sirve también para
     /// decidir a quién se conceden permisos y de quién se aceptan avisos.
     /// </summary>

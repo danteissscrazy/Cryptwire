@@ -70,6 +70,7 @@ internal sealed class WhatsAppHost(
         core.FrameNavigationStarting += OnFrameNavigationStarting;
         core.NewWindowRequested += OnNewWindowRequested;
         core.LaunchingExternalUriScheme += OnLaunchingExternalUriScheme;
+        core.DownloadStarting += OnDownloadStarting;
         core.PermissionRequested += OnPermissionRequested;
         core.NavigationCompleted += OnNavigationCompleted;
         core.ProcessFailed += OnProcessFailed;
@@ -169,6 +170,16 @@ internal sealed class WhatsAppHost(
     /// </summary>
     private void OnLaunchingExternalUriScheme(object? sender, CoreWebView2LaunchingExternalUriSchemeEventArgs e) =>
         e.Cancel = true;
+
+    /// <summary>Solo bajan los ficheros que prepara WhatsApp (los de los chats); cualquier otra descarga, no.</summary>
+    private void OnDownloadStarting(object? sender, CoreWebView2DownloadStartingEventArgs e)
+    {
+        if (navigation.DecideDownload(e.DownloadOperation.Uri) == NavigationDecision.Block)
+        {
+            e.Cancel = true;
+            Trace.TraceWarning("Cryptwire: descarga cancelada, no la ha preparado WhatsApp.");
+        }
+    }
 
     private void OnPermissionRequested(object? sender, CoreWebView2PermissionRequestedEventArgs e)
     {
