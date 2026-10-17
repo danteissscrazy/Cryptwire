@@ -145,6 +145,33 @@ public sealed class ThemeManager
         });
     }
 
+    /// <summary>
+    /// Si un tono de la piel se puede abrir: un fichero de verdad, no un enlace (uno a una carpeta de red
+    /// haría que cada aviso le mandara tu usuario de Windows), y un WAV por sus bytes, no por su nombre
+    /// (otro formato acabaría en cualquier códec instalado). La piel puede venir de internet.
+    /// </summary>
+    public static bool IsWaveFile(string path)
+    {
+        try
+        {
+            var info = new FileInfo(path);
+            if (!info.Exists || (info.Attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                return false;
+            }
+
+            Span<byte> header = stackalloc byte[12];
+            using var file = info.OpenRead();
+            return file.ReadAtLeast(header, header.Length, throwOnEndOfStream: false) == header.Length
+                && header[..4].SequenceEqual("RIFF"u8)
+                && header[8..].SequenceEqual("WAVE"u8);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return false;
+        }
+    }
+
     private static byte[]? ReadAsset(string root, string path)
     {
         var info = new FileInfo(path);
@@ -223,7 +250,7 @@ public sealed class ThemeManager
         try
         {
             var info = new FileInfo(manifest);
-            if (!info.Exists || info.Length > MaxManifestBytes)
+            if (!info.Exists || info.Length > MaxManifestBytes || (info.Attributes & FileAttributes.ReparsePoint) != 0)
             {
                 return (null, SkinPalette.Default);
             }

@@ -17,10 +17,14 @@ namespace Cryptwire.Core.Notifications;
 /// <param name="settings">Devuelve los ajustes vigentes.</param>
 /// <param name="theme">Devuelve la piel elegida (aunque el modo seguro la tenga apagada); null si no hay.</param>
 /// <param name="tonesDir">La carpeta de tonos de Cryptwire.</param>
-/// <param name="fileExists">Si un fichero existe; para los tests. Por defecto, el disco.</param>
+/// <param name="fileExists">
+/// Si un fichero existe y vale; para los tests. Por defecto, el disco, y para los tonos de la piel, que
+/// además sean un WAV de verdad y no un enlace (<see cref="ThemeManager.IsWaveFile"/>).
+/// </param>
 public sealed class ToneResolver(Func<AppSettings> settings, Func<Theme?> theme, string tonesDir, Func<string, bool>? fileExists = null)
 {
     private readonly Func<string, bool> exists = fileExists ?? File.Exists;
+    private readonly Func<string, bool> skinToneExists = fileExists ?? ThemeManager.IsWaveFile;
     private readonly string tones = Path.TrimEndingDirectorySeparator(Path.GetFullPath(tonesDir));
 
     /// <returns>La ruta del tono, o null para no hacer sonar nada.</returns>
@@ -53,7 +57,7 @@ public sealed class ToneResolver(Func<AppSettings> settings, Func<Theme?> theme,
             return general.File;
         }
 
-        return skinTones.FirstOrDefault(tone => tone is not null && exists(tone));
+        return skinTones.FirstOrDefault(tone => tone is not null && skinToneExists(tone));
     }
 
     /// <summary>Un tono tuyo: ruta completa, dentro de la carpeta de tonos y todavía en su sitio.</summary>

@@ -71,6 +71,8 @@ public sealed class JsonSettingsStoreTests : IDisposable
     [InlineData("null")]
     [InlineData("[1, 2]")]
     [InlineData("""{ "themeId": 7 }""")]
+    [InlineData("""{ "themeId": "a", "ThemeId": "b" }""")]
+    [InlineData("""{ "themeId": "relicario", "window": { "left": 1, "Left": 2 } }""")]
     public void ABrokenFileNeverStopsTheApp(string content)
     {
         dir.Write(@"Cryptwire\settings.json", content);

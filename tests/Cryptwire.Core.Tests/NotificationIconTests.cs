@@ -57,4 +57,40 @@ public class NotificationIconTests
 
         Assert.Null(NotificationIcon.DecodeInline(huge));
     }
+
+    [Theory]
+    [InlineData(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0 }, "image/png")]
+    [InlineData(new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 }, "image/jpeg")]
+    [InlineData(new byte[] { 0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50 }, "image/webp")]
+    public void OnlyJpegPngAndWebpAreDecoded(byte[] header, string mime)
+    {
+        Assert.Equal(mime, NotificationIcon.ImageMime(header));
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 })] // GIF
+    [InlineData(new byte[] { 0x42, 0x4D, 0, 0, 0, 0 })] // BMP
+    [InlineData(new byte[] { 0x49, 0x49, 0x2A, 0x00 })] // TIFF
+    [InlineData(new byte[] { 0x00, 0x00, 0x01, 0x00 })] // ICO
+    [InlineData(new byte[] { 0x49, 0x49, 0xBC, 0x01 })] // JPEG XR
+    [InlineData(new byte[] { 0x3C, 0x73, 0x76, 0x67 })] // <svg
+    [InlineData(new byte[] { 0x89, 0x50, 0x4E, 0x47 })] // PNG cortado
+    public void AnyOtherFormatIsRefusedBeforeDecoding(byte[] header)
+    {
+        Assert.Null(NotificationIcon.ImageMime(header));
+    }
+
+    [Theory]
+    [InlineData(96, 96, true)]
+    [InlineData(1024, 1024, true)]
+    [InlineData(640, 1, true)]
+    [InlineData(1, 200_000, false)]
+    [InlineData(1025, 10, false)]
+    [InlineData(10, 1025, false)]
+    [InlineData(0, 96, false)]
+    [InlineData(96, -1, false)]
+    public void HugeOrEmptyPhotosAreNotDecoded(int width, int height, bool fits)
+    {
+        Assert.Equal(fits, NotificationIcon.FitsSize(width, height));
+    }
 }

@@ -1,3 +1,5 @@
+using Cryptwire.Core.Wallpapers;
+
 namespace Cryptwire.Core.Notifications;
 
 /// <summary>De dónde sale la foto de un aviso.</summary>
@@ -23,7 +25,23 @@ public static class NotificationIcon
     /// <summary>Tope de una foto de aviso: las de perfil en miniatura pesan unos pocos KB.</summary>
     public const int MaxBytes = 1024 * 1024;
 
+    /// <summary>
+    /// Lado más largo que se descomprime. La foto se pinta a 96 px; una mucho mayor solo sirve para comerse
+    /// la memoria: un PNG de 467 bytes de 1 × 200 000 px pide más de 2 GB al descomprimirlo.
+    /// </summary>
+    public const int MaxSide = 1024;
+
     private static readonly string[] WhatsAppDomains = ["whatsapp.net", "whatsapp.com"];
+
+    /// <summary>
+    /// El formato de la foto por sus primeros bytes: JPEG, PNG o WebP, como los fondos. Cualquier otro no se
+    /// descomprime: Windows elige el códec por el contenido, y la página podría llevar a la app a cualquiera
+    /// de los que haya instalados (TIFF, RAW…), fuera del aislamiento del navegador.
+    /// </summary>
+    public static string? ImageMime(ReadOnlySpan<byte> bytes) => WallpaperCss.ImageMime(bytes);
+
+    /// <summary>Si una foto de esas medidas se puede descomprimir sin peligro.</summary>
+    public static bool FitsSize(int width, int height) => width is > 0 and <= MaxSide && height is > 0 and <= MaxSide;
 
     public static IconSource Classify(string? uri)
     {

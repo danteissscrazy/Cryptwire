@@ -46,6 +46,17 @@ internal sealed class WhatsAppHost(
 
     public async Task InitializeAsync()
     {
+#if !DEBUG
+        // Las variables WEBVIEW2_* mandan sobre lo que pide la app: una que sobrara de unas pruebas abriría un
+        // puerto de depuración a tu sesión de WhatsApp, o la llevaría a otra carpeta u otro navegador. La versión
+        // final no las escucha; la de Debug sí, que es como se prueba la app desde fuera.
+        foreach (var name in Environment.GetEnvironmentVariables().Keys.OfType<string>()
+            .Where(name => name.StartsWith("WEBVIEW2_", StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            Environment.SetEnvironmentVariable(name, null);
+        }
+#endif
+
         // La sesión del QR vive en %LOCALAPPDATA%\Cryptwire, nunca junto al ejecutable.
         Directory.CreateDirectory(paths.WebViewDataDir);
         var environment = await CoreWebView2Environment.CreateAsync(

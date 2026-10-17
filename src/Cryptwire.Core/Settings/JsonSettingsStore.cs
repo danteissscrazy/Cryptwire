@@ -42,8 +42,9 @@ public sealed class JsonSettingsStore(string path) : ISettingsStore
             DropNulls(node);
             return (node?.Deserialize<AppSettings>(Options) ?? new AppSettings()).Normalized();
         }
-        catch (JsonException)
+        catch (Exception e) when (e is JsonException or ArgumentException or InvalidOperationException)
         {
+            // ArgumentException: la misma clave dos veces con otras mayúsculas ("themeId" y "ThemeId").
             SetAside();
             return new AppSettings();
         }

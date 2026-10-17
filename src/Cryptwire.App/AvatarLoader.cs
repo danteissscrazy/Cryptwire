@@ -60,7 +60,8 @@ internal static class AvatarLoader
             return image;
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException or NotSupportedException
-            or InvalidOperationException or ArgumentException or System.Runtime.InteropServices.COMException or OverflowException)
+            or InvalidOperationException or ArgumentException or FormatException or System.Runtime.InteropServices.COMException
+            or OverflowException)
         {
             return null;
         }
@@ -79,16 +80,44 @@ internal static class AvatarLoader
         return await response.Content.ReadAsByteArrayAsync();
     }
 
+    /// <summary>
+    /// Dos pasadas, como los fondos: la primera solo lee la cabecera y rechaza lo desmesurado; la segunda
+    /// descomprime con el códec del formato que dicen sus bytes (<see cref="NotificationIcon.ImageMime"/>),
+    /// no con el que elegiría Windows.
+    /// </summary>
     private static ImageSource? Decode(byte[] bytes)
     {
-        using var stream = new MemoryStream(bytes);
-        var image = new BitmapImage();
-        image.BeginInit();
-        image.StreamSource = stream;
-        image.CacheOption = BitmapCacheOption.OnLoad;
-        image.DecodePixelWidth = DecodeSize;
-        image.EndInit();
+        if (NotificationIcon.ImageMime(bytes) is not { } mime)
+        {
+            return null;
+        }
+
+        using (var header = new MemoryStream(bytes, writable: false))
+        {
+            var size = Open(mime, header, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None).Frames[0];
+            if (!NotificationIcon.FitsSize(size.PixelWidth, size.PixelHeight))
+            {
+                return null;
+            }
+        }
+
+        using var stream = new MemoryStream(bytes, writable: false);
+        BitmapSource image = Open(mime, stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad).Frames[0];
+        var scale = (double)DecodeSize / Math.Max(image.PixelWidth, image.PixelHeight);
+        if (scale < 1)
+        {
+            image = new TransformedBitmap(image, new ScaleTransform(scale, scale));
+        }
+
         image.Freeze();
-        return image.PixelWidth > 0 ? image : null;
+        return image.PixelWidth > 0 && image.PixelHeight > 0 ? image : null;
     }
+
+    private static BitmapDecoder Open(string mime, Stream stream, BitmapCreateOptions options, BitmapCacheOption cache) => mime switch
+    {
+        "image/png" => new PngBitmapDecoder(stream, options, cache),
+        "image/jpeg" => new JpegBitmapDecoder(stream, options, cache),
+        // WPF no trae clase propia para WebP; sus bytes ya han dicho que es WebP, y solo ese códec los reconoce.
+        _ => BitmapDecoder.Create(stream, options, cache),
+    };
 }

@@ -124,6 +124,66 @@ public sealed class ThemeManagerTests : IDisposable
         Assert.Equal("relicario", Assert.Single(Manager().LoadAll()).Name);
     }
 
+    /// <summary>
+    /// Un enlace simbólico a un fichero. Sin el modo de desarrollador de Windows (ni administrador) no se
+    /// puede crear: entonces devuelve false y la prueba que lo usa no tiene nada que comprobar.
+    /// </summary>
+    private static bool TryMakeFileLink(string link, string target)
+    {
+        try
+        {
+            File.CreateSymbolicLink(link, target);
+            return true;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    [Fact]
+    public void AThemeJsonThatIsALinkIsNotRead()
+    {
+        app.Write(@"relicario\skin.css", "a {}");
+        user.Write("otro.json", """{ "name": "Otro sitio" }""");
+
+        if (TryMakeFileLink(Path.Combine(app.Path, "relicario", "theme.json"), Path.Combine(user.Path, "otro.json")))
+        {
+            Assert.Equal("relicario", Assert.Single(new ThemeManager([app.Path]).LoadAll()).Name);
+        }
+    }
+
+    [Fact]
+    public void ASkinToneHasToBeARealWaveFile()
+    {
+        var wave = Path.Combine(app.Path, "tono.wav");
+        File.WriteAllBytes(wave, [.. "RIFF"u8, 4, 0, 0, 0, .. "WAVE"u8, .. "fmt "u8]);
+        var mp3 = Path.Combine(app.Path, "falso.wav");
+        File.WriteAllBytes(mp3, [0x49, 0x44, 0x33, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        var cut = Path.Combine(app.Path, "corto.wav");
+        File.WriteAllBytes(cut, [.. "RIFF"u8]);
+        var avi = Path.Combine(app.Path, "video.wav");
+        File.WriteAllBytes(avi, [.. "RIFF"u8, 4, 0, 0, 0, .. "AVI "u8]);
+
+        Assert.True(ThemeManager.IsWaveFile(wave));
+        Assert.False(ThemeManager.IsWaveFile(mp3));
+        Assert.False(ThemeManager.IsWaveFile(avi));
+        Assert.False(ThemeManager.IsWaveFile(cut));
+        Assert.False(ThemeManager.IsWaveFile(Path.Combine(app.Path, "no-esta.wav")));
+    }
+
+    [Fact]
+    public void ASkinToneThatIsALinkIsNeverOpened()
+    {
+        var target = Path.Combine(user.Path, "de-verdad.wav");
+        File.WriteAllBytes(target, [.. "RIFF"u8, 4, 0, 0, 0, .. "WAVE"u8]);
+
+        if (TryMakeFileLink(Path.Combine(app.Path, "tono.wav"), target))
+        {
+            Assert.False(ThemeManager.IsWaveFile(Path.Combine(app.Path, "tono.wav")));
+        }
+    }
+
     [Fact]
     public void YourOwnCopyOfAThemeReplacesTheOneThatShipsWithTheApp()
     {
