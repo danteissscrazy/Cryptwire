@@ -99,6 +99,28 @@ del repo: la app la lee por encima de las demás y cada vez que guardas ves el c
 La sesión de WhatsApp (el QR vinculado) se guarda en `%LOCALAPPDATA%\Cryptwire\WebView2`, nunca en
 el repo. Para cerrar sesión del todo, borra esa carpeta o desvincula el dispositivo desde el móvil.
 
+## Publicar
+
+```
+pwsh tools/publicar.ps1
+```
+
+Deja la app en `artifacts/publish/Cryptwire.App/release` y no la da por buena hasta que:
+
+1. el escáner del binario caza los datos que `tools/probar-escaner.ps1` planta a propósito (en UTF-8,
+   Latin-1 y UTF-16, dentro de un `.dll` y un `.pdb` compilados sin `PathMap`…);
+2. los paquetes coinciden con los `packages.lock.json`, ninguno tiene vulnerabilidades conocidas y los
+   tests pasan en Release;
+3. `tools/escanear-binario.ps1` no encuentra en lo publicado ni secretos, ni las rutas de tu máquina (el
+   repo y tu perfil de usuario), ni lo que digan tus reglas personales.
+
+Tus datos personales (nombre, correo, teléfono…) van como reglas de gitleaks en
+`../.privado/gitleaks-personal.toml`, fuera del repo; los usan el pre-commit y el escáner. Con
+`git config cryptwire.personalRules true`, si falta ese fichero los dos se niegan a seguir.
+
+La compilación es reproducible: el mismo commit, compilado en otra carpeta, da los mismos bytes
+(`Deterministic`, `PathMap` y finales de línea LF fijados en `.gitattributes`).
+
 ## Estructura
 
 | Carpeta | Qué hay |
@@ -107,4 +129,4 @@ el repo. Para cerrar sesión del todo, borra esa carpeta o desvincula el disposi
 | `src/Cryptwire.Core` | La lógica sin interfaz: navegación, avisos y tonos, pieles, fondos, ajustes, inicio. Probada con tests |
 | `tests/Cryptwire.Core.Tests` | Tests unitarios de `Core` (xUnit) |
 | `themes/` | Las pieles: CSS más sus fondos, fuentes y tonos. Ver `LICENCIAS.md` en cada una |
-| `tools/` | Scripts auxiliares: los tonos (`generar-tono-prueba.py`, `generar-tono-llamada.py`), el icono (`generar-iconos.ps1`, desde `src/Cryptwire.App/Assets/logo.svg`), la marca de la barra de título (`generar-marca.ps1`) y la Cinzel fija de la ventana (`generar-cinzel-estatica.py`) |
+| `tools/` | Scripts auxiliares: publicar y escanear lo publicado (`publicar.ps1`, `escanear-binario.ps1`, `probar-escaner.ps1`), los tonos (`generar-tono-prueba.py`, `generar-tono-llamada.py`), el icono (`generar-iconos.ps1`, desde `src/Cryptwire.App/Assets/logo.svg`), la marca de la barra de título (`generar-marca.ps1`) y la Cinzel fija de la ventana (`generar-cinzel-estatica.py`) |

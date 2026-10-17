@@ -1,8 +1,11 @@
 # Prueba que escanear-binario.ps1 caza datos plantados a propósito en todas las formas en que un binario
 # los guarda (UTF-8, Latin-1, UTF-16 LE y BE en posición par o impar, cadenas larguísimas, un .dll y un
-# .pdb compilados sin PathMap), que no salta con ficheros limpios ni con casi-coincidencias, que PathMap
-# deja limpio lo que limpia y que falla cerrado cuando no puede comprobar. Los datos plantados se
-# inventan al ejecutarla: aquí no hay nada que proteger. Sale con 0 si todo va como debe y 1 si no.
+# .pdb compilados sin PathMap, fuentes comprimidas dentro del .pdb y un PDB comprimido dentro del .dll),
+# que no salta con ficheros limpios ni con casi-coincidencias, que PathMap deja limpio lo que limpia y que
+# falla cerrado cuando no puede comprobar (también ante un zip). Las reglas plantadas extienden las de
+# gitleaks de serie, con sus listas de rutas permitidas, como podrían hacerlo las tuyas. Los datos
+# plantados se inventan al ejecutarla: aquí no hay nada que proteger. Sale con 0 si todo va como debe y
+# 1 si no.
 $ErrorActionPreference = 'Stop'
 $scanner = Join-Path $PSScriptRoot 'escanear-binario.ps1'
 $repo = Split-Path $PSScriptRoot
@@ -42,6 +45,11 @@ try {
     $rules = Join-Path $work 'reglas.toml'
     Set-Content -LiteralPath $rules -Encoding utf8 -Value @"
 title = 'Reglas plantadas'
+[extend]
+useDefault = true
+[[rules]]
+id = 'plantado-comentario'
+regex = '''(?i)cw-comentario-$tag'''
 [[rules]]
 id = 'plantado-email'
 regex = '''(?i)cw-plantado-$tag@example\.invalid'''
@@ -119,8 +127,15 @@ regex = '''(?i)cw-carpeta-$tag[\w-]*[\\/]+Plantado\.cs'''
     foreach ($clean in 'limpio-azar.bin', 'limpio-casi.txt', 'limpio-casi-utf16.bin') { $expected[$clean] = @{} }
 
     # Compilado de verdad: la ruta de la carpeta acaba en el .dll y troceada en el .pdb, el correo en UTF-16
-    # (cadena del código) y el nombre en UTF-8 (atributo). Con PathMap, la ruta desaparece y el resto no.
-    foreach ($variant in @(@('sin-pathmap', 'false'), @('con-pathmap', 'true'))) {
+    # (cadena del código), el nombre en UTF-8 (atributo) y el comentario en ningún sitio, salvo si las
+    # fuentes van incrustadas: entonces va comprimido dentro del .pdb, o del PDB comprimido dentro del .dll.
+    # Con PathMap, la ruta desaparece y el resto no.
+    $variants = @(
+        @('sin-pathmap', @('-p:Mapear=false')),
+        @('fuentes-en-pdb', @('-p:Mapear=true', '-p:EmbedAllSources=true')),
+        @('pdb-en-dll', @('-p:Mapear=true', '-p:EmbedAllSources=true', '-p:DebugType=embedded'))
+    )
+    foreach ($variant in $variants) {
         $proj = Join-Path $work "$folder-$($variant[0])"
         New-Item -ItemType Directory -Path $proj | Out-Null
         Set-Content -LiteralPath (Join-Path $proj 'Plantado.csproj') -Encoding utf8 -Value @'
@@ -131,22 +146,27 @@ regex = '''(?i)cw-carpeta-$tag[\w-]*[\\/]+Plantado\.cs'''
   </PropertyGroup>
 </Project>
 '@
+        # El relleno hace que el compilador comprima la fuente al incrustarla (las pequeñas van tal cual).
         Set-Content -LiteralPath (Join-Path $proj 'Plantado.cs') -Encoding utf8 -Value @"
+// cw-comentario-$tag
+// $('relleno ' * 300)
 [assembly: System.Reflection.AssemblyMetadata("plantado", "$name")]
 public static class Plantado { public static string Correo() => "$email"; }
 "@
-        $build = dotnet build $proj -c Release -nologo -v q "-p:Mapear=$($variant[1])" `
+        $build = dotnet build $proj -c Release -nologo -v q @($variant[1]) `
             -p:ImportDirectoryBuildProps=false -p:ImportDirectoryBuildTargets=false 2>&1
         if ($LASTEXITCODE -ne 0) { throw "no compila el proyecto plantado ($($variant[0])): $build" }
         $out = Join-Path $scan "compilado-$($variant[0])"
         New-Item -ItemType Directory -Path $out | Out-Null
-        Copy-Item (Join-Path $proj 'bin\Release\net10.0\Plantado.dll'), (Join-Path $proj 'bin\Release\net10.0\Plantado.pdb') $out
+        Get-ChildItem (Join-Path $proj 'bin\Release\net10.0') -Filter 'Plantado.*' | Where-Object Extension -in '.dll', '.pdb' |
+            Copy-Item -Destination $out
     }
     $expected['compilado-sin-pathmap\Plantado.dll'] = @{ 'plantado-carpeta' = 'rutas de depuración'; 'plantado-email' = 'UTF-16LE'; 'plantado-nombre' = 'UTF-8' }
     # Entera, la ruta de la fuente solo está en las rutas de depuración del .pdb: en sus bytes va troceada.
     $expected['compilado-sin-pathmap\Plantado.pdb'] = @{ 'plantado-carpeta' = 'rutas de depuración'; 'plantado-fuente' = 'rutas de depuración' }
-    $expected['compilado-con-pathmap\Plantado.dll'] = @{ 'plantado-email' = 'UTF-16LE'; 'plantado-nombre' = 'UTF-8' }
-    $expected['compilado-con-pathmap\Plantado.pdb'] = @{}
+    $expected['compilado-fuentes-en-pdb\Plantado.dll'] = @{ 'plantado-email' = 'UTF-16LE'; 'plantado-nombre' = 'UTF-8' }
+    $expected['compilado-fuentes-en-pdb\Plantado.pdb'] = @{ 'plantado-comentario' = 'depuración (UTF-8)'; 'plantado-email' = 'depuración (UTF-8)'; 'plantado-nombre' = 'depuración (UTF-8)' }
+    $expected['compilado-pdb-en-dll\Plantado.dll'] = @{ 'plantado-comentario' = 'depuración (UTF-8)'; 'plantado-email' = 'UTF-16LE'; 'plantado-nombre' = 'UTF-8' }
 
     "Datos plantados ($($expected.Count) ficheros):"
     $report = Join-Path $work 'informe.json'
@@ -176,8 +196,23 @@ public static class Plantado { public static string Correo() => "$email"; }
     Assert-True ((Invoke-Scanner @('-Ruta', (Join-Path $work 'no-existe'), '-Reglas', $rules)).Code -eq 2) 'carpeta que no existe'
     Assert-True ((Invoke-Scanner @('-Ruta', $scan, '-Reglas', (Join-Path $work 'no-existe.toml'))).Code -eq 2) 'reglas que no existen'
     $broken = Join-Path $work 'rota.toml'
-    Set-Content -LiteralPath $broken -Encoding utf8 -Value "[[rules]]`nid = 'rota'`nregex = '''(?i)[sin-cerrar'''"
-    Assert-True ((Invoke-Scanner @('-Ruta', $scan, '-Reglas', $broken)).Code -eq 2) 'regla que no compila'
+    Set-Content -LiteralPath $broken -Encoding utf8 -Value "[[rules]]`nid = 'rota'`nregex = '''(?i)[cw-rota-$tag'''"
+    $run = Invoke-Scanner @('-Ruta', $scan, '-Reglas', $broken)
+    Assert-True ($run.Code -eq 2) 'regla que no compila'
+    Assert-True (-not ($run.Output -match "cw-rota-$tag")) 'y no enseña la regla (podría ser tu dato)'
+    $zipped = Join-Path $work 'comprimido'
+    New-Item -ItemType Directory -Path $zipped | Out-Null
+    [IO.File]::WriteAllText((Join-Path $work 'dentro.txt'), $email, $utf8)
+    Compress-Archive -LiteralPath (Join-Path $work 'dentro.txt') -DestinationPath (Join-Path $zipped 'paquete.zip')
+    Assert-True ((Invoke-Scanner @('-Ruta', $zipped, '-Reglas', $rules)).Code -eq 2) 'un zip (no se ve dentro)'
+    # Un .dll con su PDB incrustado estropeado: no se puede leer lo comprimido, luego no está limpio.
+    $corrupt = Join-Path $work 'estropeado'
+    New-Item -ItemType Directory -Path $corrupt | Out-Null
+    $dll = [IO.File]::ReadAllBytes((Join-Path $scan 'compilado-pdb-en-dll\Plantado.dll'))
+    $at = [Text.Encoding]::Latin1.GetString($dll).IndexOf('MPDB', [StringComparison]::Ordinal)
+    for ($k = $at + 8; $k -lt $at + 72; $k++) { $dll[$k] = $dll[$k] -bxor 0x5A }
+    [IO.File]::WriteAllBytes((Join-Path $corrupt 'Plantado.dll'), $dll)
+    Assert-True ($at -gt 0 -and (Invoke-Scanner @('-Ruta', $corrupt, '-Reglas', $rules)).Code -eq 2) 'un .dll con el PDB incrustado ilegible'
     $path = $env:PATH
     try {
         $env:PATH = ($path -split ';' | Where-Object { $_ -and -not (Test-Path -LiteralPath (Join-Path $_ 'gitleaks.exe')) }) -join ';'
