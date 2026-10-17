@@ -5,3 +5,12 @@ title = "Cryptwire"
 
 [extend]
 useDefault = true
+
+# Falsos positivos de Inno Setup al escanear el instalador: sus Setup.e32 y SetupCustomStyle.e32 llevan
+# nombres de tipos genericos de Delphi («...TCredential>.TEnumerator5», «TPasswordEdit>.TEnumerator5»)
+# que generic-api-key toma por claves. Solo esa forma exacta, entera: un nombre de tipo y «>.TEnumerator».
+[[allowlists]]
+description = "Nombres de tipos genericos de Delphi (Inno Setup)"
+targetRules = ["generic-api-key"]
+regexTarget = "match"
+regexes = ['''^[A-Za-z][A-Za-z0-9.]*>\.TEnumerator[0-9]*$''']

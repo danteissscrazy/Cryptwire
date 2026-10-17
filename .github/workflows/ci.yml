@@ -1,0 +1,86 @@
+# Cada push a main y cada pull request: historial sin secretos, tests, publicación escaneada e instalador.
+# Lo mismo que hace tools\empaquetar.ps1 en local, en una máquina limpia de GitHub.
+#
+# - Sin las reglas de datos personales: viven fuera del repo y no se suben ni como secreto. Lo que llega
+#   aquí ya ha pasado por ellas en el pre-commit; el escáner avisa de que faltan y sigue con las demás.
+# - Las acciones van fijadas por commit y las herramientas que se descargan, por su SHA-256 (y, Inno Setup,
+#   también por su firma): una etiqueta o una descarga cambiada no puede colarse en el instalador.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  GITLEAKS_VERSION: "8.30.1"
+  GITLEAKS_ZIP_SHA256: "d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e"
+  GITLEAKS_EXE_SHA256: "17157e2ee8b76fc8b1d8bee607a250e34b8a8023c8bc81822d4b5ee4d78fcb7c"
+  INNO_VERSION: "6.7.3"
+  INNO_SHA256: "9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732"
+
+jobs:
+  instalador:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # gitleaks revisa el historial entero.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: gitleaks
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = Join-Path $env:RUNNER_TEMP 'gitleaks'
+          $zip = "$dir.zip"
+          Invoke-WebRequest "https://github.com/gitleaks/gitleaks/releases/download/v$env:GITLEAKS_VERSION/gitleaks_$($env:GITLEAKS_VERSION)_windows_x64.zip" -OutFile $zip
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne $env:GITLEAKS_ZIP_SHA256) { throw 'gitleaks: el zip no es el esperado.' }
+          Expand-Archive $zip -DestinationPath $dir
+          if ((Get-FileHash "$dir\gitleaks.exe" -Algorithm SHA256).Hash -ne $env:GITLEAKS_EXE_SHA256) { throw 'gitleaks: el ejecutable no es el esperado.' }
+          Add-Content $env:GITHUB_PATH $dir
+
+      - name: Historial sin secretos
+        run: gitleaks git --config .gitleaks.toml --redact --no-banner --log-level warn .
+
+      - name: Inno Setup
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = Join-Path $env:RUNNER_TEMP "innosetup-$env:INNO_VERSION.exe"
+          $tag = 'is-' + $env:INNO_VERSION.Replace('.', '_')
+          Invoke-WebRequest "https://github.com/jrsoftware/issrc/releases/download/$tag/innosetup-$env:INNO_VERSION.exe" -OutFile $setup
+          if ((Get-FileHash $setup -Algorithm SHA256).Hash -ne $env:INNO_SHA256) { throw 'Inno Setup: el instalador no es el esperado.' }
+          $signature = Get-AuthenticodeSignature $setup
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch '^CN="?Pyrsys B\.V\.') { throw "Inno Setup: firma no válida ($($signature.Status))." }
+          $dir = Join-Path $env:RUNNER_TEMP 'inno'
+          Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/CURRENTUSER', "/DIR=`"$dir`"" -Wait
+          if (-not (Test-Path "$dir\ISCC.exe")) { throw 'Inno Setup no se ha instalado.' }
+          "ISCC=$dir\ISCC.exe" | Add-Content $env:GITHUB_ENV
+
+      - name: Tests, publicación escaneada e instalador
+        run: ./tools/empaquetar.ps1 -Iscc $env:ISCC
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: instalador
+          path: artifacts/instalador/*.exe
+          if-no-files-found: error
+          retention-days: 30

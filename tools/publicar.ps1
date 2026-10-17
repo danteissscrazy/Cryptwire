@@ -45,8 +45,8 @@ Step 'Paquetes bloqueados y sin vulnerabilidades, tests en Release'
 dotnet test (Join-Path $source 'tests\Cryptwire.Core.Tests\Cryptwire.Core.Tests.csproj') @common 2>&1 | Select-Object -Last 3
 Assert-Exit 'fallan la restauración o los tests'
 
-Step 'Publicación'
-dotnet publish (Join-Path $source 'src\Cryptwire.App\Cryptwire.App.csproj') @common -o $output 2>&1 | Select-Object -Last 2
+Step 'Publicación (Windows x64, con .NET dentro)'
+dotnet publish (Join-Path $source 'src\Cryptwire.App\Cryptwire.App.csproj') @common -r win-x64 --self-contained -o $output 2>&1 | Select-Object -Last 2
 Assert-Exit 'falla la publicación'
 
 Step 'Nada personal ni secreto en lo publicado'

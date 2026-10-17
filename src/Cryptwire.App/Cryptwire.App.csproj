@@ -11,6 +11,14 @@
     <AssemblyName>Cryptwire</AssemblyName>
     <Product>Cryptwire</Product>
     <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
+    <!-- El instalador lleva .NET dentro (publicar.ps1 publica para win-x64 con el runtime). Con el RID en
+         plural, los packages.lock.json incluyen también los paquetes de win-x64 sin cambiar la carpeta de
+         bin\ de siempre. -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <!-- Los mensajes de .NET, WPF y Windows Forms solo en español (y el inglés de serie). -->
+    <SatelliteResourceLanguages>es</SatelliteResourceLanguages>
+    <!-- Lo que se distribuye va sin .pdb: a quien instala no le sirve. -->
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
   </PropertyGroup>
 
   <!-- Windows Forms se usa por su nombre completo: así sus Application, Button o Color no chocan con los de WPF. -->

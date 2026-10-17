@@ -11,6 +11,21 @@ Cryptwire abre WhatsApp Web dentro de una ventana propia (WebView2, el motor de 
 aplica una piel en CSS. No usa APIs no oficiales, no automatiza nada y no lee ni guarda tus mensajes:
 el cifrado de extremo a extremo lo sigue haciendo WhatsApp Web.
 
+## Instalar
+
+Para Windows 10 (1809 o posterior) y Windows 11, de 64 bits. Ejecuta `Cryptwire-<versión>-instalador.exe`:
+
+- Se instala solo para tu usuario, sin pedir permisos de administrador, en
+  `%LOCALAPPDATA%\Programs\Cryptwire`. Lleva .NET dentro; si a tu PC le falta Microsoft Edge WebView2 (el
+  motor que pinta WhatsApp Web), instala el de Microsoft.
+- El instalador todavía no va firmado: la primera vez, Windows SmartScreen avisa de que es una app que no
+  reconoce. Para seguir: **Más información › Ejecutar de todas formas**.
+- Al abrir Cryptwire, vincúlala desde el móvil: en WhatsApp, **Dispositivos vinculados › Vincular un
+  dispositivo**, y escanea el código QR. Cada PC se vincula por separado.
+- Actualizar es instalar la versión nueva encima: cierra la que está abierta y no toca tus datos (sesión,
+  ajustes, tonos y fondos, en `%LOCALAPPDATA%\Cryptwire`). Desinstalar (Configuración › Aplicaciones)
+  pregunta si los borra también.
+
 ## Pieles
 
 Una piel es una carpeta con un `skin.css` y, si quiere, sus fondos y fuentes, sus tonos (`tono.wav`
@@ -105,7 +120,9 @@ el repo. Para cerrar sesión del todo, borra esa carpeta o desvincula el disposi
 pwsh tools/publicar.ps1
 ```
 
-Deja la app en `artifacts/publish/Cryptwire.App/release` y no la da por buena hasta que:
+Publica el commit, no la carpeta (el árbol de git tiene que estar limpio): lo clona en
+`artifacts/fuente`, deja la app para Windows x64 con .NET dentro en `artifacts/publicar` y no la da por
+buena hasta que:
 
 1. el escáner del binario caza los datos que `tools/probar-escaner.ps1` planta a propósito (en UTF-8,
    Latin-1 y UTF-16, dentro de un `.dll` y un `.pdb` compilados sin `PathMap`…);
@@ -119,7 +136,24 @@ Tus datos personales (nombre, correo, teléfono…) van como reglas de gitleaks 
 `git config cryptwire.personalRules true`, si falta ese fichero los dos se niegan a seguir.
 
 La compilación es reproducible: el mismo commit, compilado en otra carpeta, da los mismos bytes
-(`Deterministic`, `PathMap` y finales de línea LF fijados en `.gitattributes`).
+(`Deterministic`, `PathMap`, finales de línea LF fijados en `.gitattributes`, el SDK fijado en
+`global.json` y sin Source Link, que metería la dirección del remoto de cada clon).
+
+## Instalador
+
+```
+pwsh tools/empaquetar.ps1
+```
+
+Necesita [Inno Setup](https://jrsoftware.org/isinfo.php) 6.7 o posterior. Ejecuta `publicar.ps1`, mete
+dentro el instalador de WebView2 de Microsoft (lo descarga y comprueba que lo firma Microsoft; con
+`-WebView2 <ruta>` usa uno que ya tengas) y compila `installer/Cryptwire.iss` dos veces: primero sin
+comprimir nada, ni los ficheros ni la cabecera (textos, código y lista de ficheros), para que el escáner
+lea el instalador entero, y después comprimido. El resultado queda en `artifacts/instalador`.
+
+La CI de GitHub (`.github/workflows/ci.yml`) hace lo mismo en cada push a `main` y en cada pull request,
+y deja el instalador como artefacto. Allí no hay reglas de datos personales: el escáner avisa y sigue con
+las de secretos y las de rutas.
 
 ## Estructura
 
@@ -129,4 +163,5 @@ La compilación es reproducible: el mismo commit, compilado en otra carpeta, da 
 | `src/Cryptwire.Core` | La lógica sin interfaz: navegación, avisos y tonos, pieles, fondos, ajustes, inicio. Probada con tests |
 | `tests/Cryptwire.Core.Tests` | Tests unitarios de `Core` (xUnit) |
 | `themes/` | Las pieles: CSS más sus fondos, fuentes y tonos. Ver `LICENCIAS.md` en cada una |
-| `tools/` | Scripts auxiliares: publicar y escanear lo publicado (`publicar.ps1`, `escanear-binario.ps1`, `probar-escaner.ps1`), los tonos (`generar-tono-prueba.py`, `generar-tono-llamada.py`), el icono (`generar-iconos.ps1`, desde `src/Cryptwire.App/Assets/logo.svg`), la marca de la barra de título (`generar-marca.ps1`) y la Cinzel fija de la ventana (`generar-cinzel-estatica.py`) |
+| `installer/` | El instalador de Inno Setup (`Cryptwire.iss`) |
+| `tools/` | Scripts auxiliares: publicar, escanear lo publicado y empaquetar (`publicar.ps1`, `escanear-binario.ps1`, `probar-escaner.ps1`, `empaquetar.ps1`), los tonos (`generar-tono-prueba.py`, `generar-tono-llamada.py`), el icono (`generar-iconos.ps1`, desde `src/Cryptwire.App/Assets/logo.svg`), la marca de la barra de título (`generar-marca.ps1`) y la Cinzel fija de la ventana (`generar-cinzel-estatica.py`) |
