@@ -105,7 +105,7 @@ public class LayoutScriptTests
 
         Drag(engine, 664, 800);
 
-        Assert.Contains("@media (orientation: landscape) { div:has(> #side) { flex: 0 0 clamp(260px, 36.80%", Css(engine));
+        Assert.Contains("""@media (orientation: landscape) { div:has(> #side), [data-testid="drawer-left"] { flex: 0 0 clamp(260px, 36.80%""", Css(engine));
         Assert.DoesNotContain("orientation: portrait", Css(engine));
         Assert.Equal("""{"landscape":0.368,"portrait":null}""", Saved(engine));
         Assert.False(HasClass(engine, "cw-panel-drag"));
@@ -123,8 +123,8 @@ public class LayoutScriptTests
         Drag(engine, 664, 564);
 
         Assert.Equal("""{"landscape":0.3,"portrait":0.5}""", Saved(engine));
-        Assert.Contains("@media (orientation: landscape) { div:has(> #side) { flex: 0 0 clamp(260px, 30.00%", Css(engine));
-        Assert.Contains("@media (orientation: portrait) { div:has(> #side) { flex: 0 0 clamp(260px, 50.00%", Css(engine));
+        Assert.Contains("""@media (orientation: landscape) { div:has(> #side), [data-testid="drawer-left"] { flex: 0 0 clamp(260px, 30.00%""", Css(engine));
+        Assert.Contains("""@media (orientation: portrait) { div:has(> #side), [data-testid="drawer-left"] { flex: 0 0 clamp(260px, 50.00%""", Css(engine));
     }
 
     [Theory]

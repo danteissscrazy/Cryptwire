@@ -48,7 +48,10 @@ public static class LayoutScript
 
           const style = document.createElement("style");
           style.id = {{JsonSerializer.Serialize(StyleElementId)}};
-          const rule = r => "div:has(> #side) { flex: 0 0 clamp(" + MIN_LIST + "px, " + (r * 100).toFixed(2) +
+          // El cajón izquierdo de WhatsApp (paneles que tapan la lista) va con la lista. Si se quedara con su
+          // ancho de siempre, el cajón central (el de enviar fotos), que empieza donde acaba él, dejaría su
+          // borde como una raya en medio de la conversación aunque esté vacío.
+          const rule = r => "div:has(> #side), [data-testid=\"drawer-left\"] { flex: 0 0 clamp(" + MIN_LIST + "px, " + (r * 100).toFixed(2) +
             "%, calc(100% - " + (MIN_CHAT + RAIL) + "px)) !important; max-width: none !important; min-width: 0 !important; }";
           const render = () => {
             let css =
