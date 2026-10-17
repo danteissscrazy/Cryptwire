@@ -154,8 +154,12 @@ begin
     Exit;
   WizardForm.StatusLabel.Caption := 'Instalando Microsoft Edge WebView2…';
   ExtractTemporaryFile('MicrosoftEdgeWebview2Setup.exe');
-  if not Exec(ExpandConstant('{tmp}\MicrosoftEdgeWebview2Setup.exe'), '/silent /install', '', SW_HIDE,
-      ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) or not WebView2Installed then
+  { Lo que vale es que después esté instalado: su código de salida no es 0 en todos los casos buenos
+    (con WebView2 ya puesto para todo el PC devuelve 0x80040828). }
+  ResultCode := 0;
+  Exec(ExpandConstant('{tmp}\MicrosoftEdgeWebview2Setup.exe'), '/silent /install', '', SW_HIDE,
+    ewWaitUntilTerminated, ResultCode);
+  if not WebView2Installed then
     SuppressibleMsgBox('No se ha podido instalar Microsoft Edge WebView2 (código ' + IntToStr(ResultCode) + '). ' +
       'Cryptwire lo necesita: instálalo desde la web de Microsoft y vuelve a abrirla.', mbError, MB_OK, IDOK);
 end;
