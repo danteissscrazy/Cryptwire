@@ -20,7 +20,8 @@ env:
 jobs:
   capturas:
     runs-on: windows-2025
-    timeout-minutes: 20
+    # Hasta una hora esperando a que Windows acepte avisos (ver tools/sacar-capturas.ps1).
+    timeout-minutes: 100
     defaults:
       run:
         shell: pwsh
@@ -34,7 +35,7 @@ jobs:
           global-json-file: global.json
 
       - name: Compilar en Debug
-        run: dotnet build src/Cryptwire.App/Cryptwire.App.csproj -c Debug
+        run: dotnet build src/Cryptwire.App/Cryptwire.App.csproj -c Debug -p:RestoreLockedMode=true
 
       - name: Capturas
         run: ./tools/sacar-capturas.ps1 -Exe "$env:GITHUB_WORKSPACE\src\Cryptwire.App\bin\Debug\net10.0-windows\Cryptwire.exe" -Salida "$env:RUNNER_TEMP\capturas"

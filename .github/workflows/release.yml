@@ -1,0 +1,55 @@
+# Una versión: al subir una etiqueta vX.Y.Z, la CI entera (historial, tests, publicación escaneada, instalador
+# y su prueba en un Windows sin WebView2) y, si todo pasa, un borrador de release en GitHub con el instalador
+# y su SHA-256. El borrador no lo ve nadie más: se revisa y se publica a mano.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  borrador:
+    needs: ci
+    runs-on: windows-2025
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: instalador
+          path: ${{ runner.temp }}/instalador
+
+      - name: Borrador de release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # La etiqueta tiene que ser la versión del producto: v1.2.3 con <Version>1.2.3</Version>.
+          $version = ([xml] (Get-Content Directory.Build.props -Raw)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          if ($env:TAG -cne "v$version") { throw "la etiqueta $env:TAG no es la versión del producto (v$version)." }
+          $installer = Get-Item "$env:RUNNER_TEMP\instalador\Cryptwire-$version-instalador.exe"
+          $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          $sums = Join-Path $env:RUNNER_TEMP 'SHA256SUMS.txt'
+          "$hash  $($installer.Name)" | Set-Content $sums -Encoding ascii
+          $notes = Join-Path $env:RUNNER_TEMP 'notas.md'
+          @(
+            "Instalador para Windows 10 (1809 o posterior) y Windows 11, de 64 bits. Ver el README para instalar y actualizar.",
+            "",
+            "SHA-256 de ``$($installer.Name)``: ``$hash``"
+          ) | Set-Content $notes -Encoding utf8
+          gh release create $env:TAG $installer.FullName $sums --draft --verify-tag --title "Cryptwire $version" --notes-file $notes

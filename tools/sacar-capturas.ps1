@@ -211,36 +211,56 @@ $screenHeight = [Win]::GetSystemMetrics(1)
 # Escritorio liso en el azul noche del Relicario, para que los avisos se vean sobre algo de la piel.
 $null = [Win]::SystemParametersInfo(0x14, 0, '', 3)
 $null = [Win]::SetSysColors(1, [int[]] @(1), [int[]] @(0x000A0402))
-$state = 0
-$null = [Win]::SHQueryUserNotificationState([ref] $state)
-"estado de avisos de Windows: $state (5 = acepta avisos)"
 
-Step 'Abrir Cryptwire, sin vincular'
-$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$port --lang=es"
-$process = Start-Process -FilePath $Exe -PassThru
-$main = Wait-Until { Get-ProcessWindows $process.Id | Where-Object { $_.Width -ge 700 } | Select-Object -First 1 } 60 'no aparece la ventana de Cryptwire'
-"ventana: '$($main.Title)'"
-$x = 120; $y = 60
-$null = [Win]::SetWindowPos($main.Hwnd, [IntPtr]::Zero, $x, $y, 1280, 820, 0x0040)  # SWP_SHOWWINDOW
 
-$script:pageSocket = Wait-Until {
+function Get-PageSocket {
     try {
-        (Invoke-RestMethod "http://127.0.0.1:$port/json/list" -TimeoutSec 2) |
-            Where-Object { $_.type -eq 'page' -and $_.url -like 'https://web.whatsapp.com/*' } |
-            Select-Object -First 1 -ExpandProperty webSocketDebuggerUrl
-    } catch { $null }
-} 90 'no responde el puerto de depuración'
-'página de WhatsApp: conectada'
+        $json = (Invoke-WebRequest "http://127.0.0.1:$port/json/list" -TimeoutSec 2 -UseBasicParsing).Content
+    } catch {
+        return $null
+    }
+    foreach ($target in @($json | ConvertFrom-Json)) {
+        if ($target.type -eq 'page' -and "$($target.url)".StartsWith('https://web.whatsapp.com/')) { return $target.webSocketDebuggerUrl }
+    }
+    $null
+}
 
-# Esperar al QR de vincular y a que la piel esté puesta.
-Wait-Until { Invoke-Page "document.querySelectorAll('canvas').length > 0 && document.readyState === 'complete'" } 120 'no sale el QR de WhatsApp Web' | Out-Null
-Start-Sleep -Seconds 4
-"idioma de la página: $(Invoke-Page 'document.documentElement.lang')"
-"estilos en la página: $(Invoke-Page 'document.querySelectorAll(''style'').length')"
-"QR difuminados: $(Invoke-Page "(() => { const c = [...document.querySelectorAll('canvas')]; c.forEach(e => { e.style.filter = 'blur(9px)'; }); return c.length; })()")"
-Start-Sleep -Seconds 1
+# Abre Cryptwire sin vincular, con la ventana en su sitio, y espera al QR con la piel puesta.
+function Open-Cryptwire {
+    $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$port --lang=es"
+    $script:process = Start-Process -FilePath $Exe -PassThru
+    $script:main = Wait-Until { Get-ProcessWindows $script:process.Id | Where-Object { $_.Width -ge 700 } | Select-Object -First 1 } 60 'no aparece la ventana de Cryptwire'
+    "ventana: '$($script:main.Title)'"
+    $null = [Win]::SetWindowPos($script:main.Hwnd, [IntPtr]::Zero, 120, 60, 1280, 820, 0x0040)  # SWP_SHOWWINDOW
+    try {
+        $script:pageSocket = Wait-Until { Get-PageSocket } 90 'no responde el puerto de depuración'
+    } catch {
+        Get-CimInstance Win32_Process -Filter "Name = 'msedgewebview2.exe'" | Select-Object -First 1 | ForEach-Object {
+            "proceso de WebView2 con el puerto: $($_.CommandLine -match 'remote-debugging-port')"
+        }
+        try { "json/list: $((Invoke-WebRequest "http://127.0.0.1:$port/json/list" -TimeoutSec 2 -UseBasicParsing).Content)" } catch { "json/list: $_" }
+        throw
+    }
+    'página de WhatsApp: conectada'
+    Wait-Until { Invoke-Page "document.querySelectorAll('canvas').length > 0 && document.readyState === 'complete'" } 120 'no sale el QR de WhatsApp Web' | Out-Null
+    Start-Sleep -Seconds 4
+    "idioma de la página: $(Invoke-Page 'document.documentElement.lang'); estilos de Cryptwire: $(Invoke-Page '[...document.querySelectorAll(''style[id^=cryptwire]'')].map(s => s.id).join('', '')')"
+    Hide-Qr
+}
 
-Step 'Capturas'
+function Hide-Qr {
+    "QR difuminados: $(Invoke-Page "(() => { const c = [...document.querySelectorAll('canvas')]; c.forEach(e => { e.style.filter = 'blur(9px)'; }); return c.length; })()")"
+    Start-Sleep -Seconds 1
+}
+
+function Close-Cryptwire {
+    Start-Process -FilePath $Exe -ArgumentList '--salir' -Wait
+    Wait-Until { $script:process.HasExited } 30 'Cryptwire no se ha cerrado' | Out-Null
+    'cerrada'
+}
+
+Step 'Ventana y ajustes'
+Open-Cryptwire
 Save-Window $main.Hwnd '01-ventana.png'
 
 # Ajustes, con el botón de la barra de título (UI Automation).
@@ -252,15 +272,36 @@ $button.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
 $settings = Wait-Until { Get-ProcessWindows $process.Id | Where-Object { $_.Hwnd -ne $main.Hwnd -and $_.Width -ge 800 } | Select-Object -First 1 } 20 'no se abren los ajustes'
 Start-Sleep -Seconds 2
 Save-Window $settings.Hwnd '02-ajustes.png'
-$settingsElement = [Windows.Automation.AutomationElement]::FromHandle($settings.Hwnd)
-$settingsElement.GetCurrentPattern([Windows.Automation.WindowPattern]::Pattern).Close()
+[Windows.Automation.AutomationElement]::FromHandle($settings.Hwnd).GetCurrentPattern([Windows.Automation.WindowPattern]::Pattern).Close()
 Start-Sleep -Seconds 1
+Close-Cryptwire
 
+# Windows no deja salir avisos en la primera hora tras el primer inicio de sesión (horas tranquilas, estado 6)
+# y Cryptwire lo respeta. Una máquina de GitHub acaba de iniciar sesión por primera vez: se espera a que acaben.
+Step 'Esperar a que Windows acepte avisos'
+$start = Get-Date
+$lastReport = [datetime]::MinValue
+while ($true) {
+    $state = 0
+    $null = [Win]::SHQueryUserNotificationState([ref] $state)
+    if ($state -eq 5) { break }
+    if ((Get-Date) - $start -gt [TimeSpan]::FromMinutes(80)) { throw "Windows no acepta avisos (estado $state) tras 80 minutos." }
+    if ((Get-Date) - $lastReport -gt [TimeSpan]::FromMinutes(5)) {
+        "estado $state (5 = los acepta), $([int]((Get-Date) - $start).TotalMinutes) min"
+        $lastReport = Get-Date
+    }
+    Start-Sleep -Seconds 15
+}
+"Windows acepta avisos (esperados $([int]((Get-Date) - $start).TotalMinutes) min)"
+
+Step 'Aviso'
+Open-Cryptwire
 # El aviso solo sale si no estás en Cryptwire: se minimiza y se vuelve a enseñar sin activarla.
 $null = [Win]::ShowWindow($main.Hwnd, 7)  # SW_SHOWMINNOACTIVE
 Start-Sleep -Milliseconds 600
 $null = [Win]::ShowWindow($main.Hwnd, 4)  # SW_SHOWNOACTIVATE
 Start-Sleep -Seconds 1
+Hide-Qr
 $avatar = New-AvatarDataUri
 $body = '¿Nos vemos a medianoche en la cripta?'
 Invoke-Page "new Notification('Lilith', { body: '$body', icon: '$avatar', tag: 'cryptwire-captura' }); true" | Out-Null
@@ -270,8 +311,5 @@ $t = Get-Rect $toast.Hwnd
 $pad = 24
 Save-Screen ($t.Left - $pad) ($t.Top - $pad) ($t.Right - $t.Left + 2 * $pad) ($t.Bottom - $t.Top + 2 * $pad) '03-aviso.png'
 Save-Screen 0 0 $screenWidth $screenHeight '04-escritorio.png'
-
-Step 'Cerrar'
-Start-Process -FilePath $Exe -ArgumentList '--salir' -Wait
-Wait-Until { $process.HasExited } 30 'Cryptwire no se ha cerrado' | Out-Null
-'cerrada'
+Close-Cryptwire
+'OK'
