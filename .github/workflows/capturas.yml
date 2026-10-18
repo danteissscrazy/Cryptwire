@@ -1,0 +1,48 @@
+# Las capturas del README, a mano: Cryptwire sin vincular en una máquina limpia de GitHub, así que no sale
+# ningún chat ni contacto. Ver tools/sacar-capturas.ps1. Las capturas quedan como artefacto; se revisan y se
+# copian a docs/capturas a mano.
+name: Capturas
+
+on:
+  workflow_dispatch:
+  # Provisional, mientras se afina en la rama de la fase (workflow_dispatch solo vale desde main).
+  push:
+    branches: [fase-6]
+    paths: [tools/sacar-capturas.ps1, .github/workflows/capturas.yml]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+
+jobs:
+  capturas:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Compilar en Debug
+        run: dotnet build src/Cryptwire.App/Cryptwire.App.csproj -c Debug
+
+      - name: Capturas
+        run: ./tools/sacar-capturas.ps1 -Exe "$env:GITHUB_WORKSPACE\src\Cryptwire.App\bin\Debug\net10.0-windows\Cryptwire.exe" -Salida "$env:RUNNER_TEMP\capturas"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: capturas
+          path: ${{ runner.temp }}/capturas
+          if-no-files-found: ignore
+          retention-days: 7
