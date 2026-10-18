@@ -55,6 +55,17 @@ internal sealed class WhatsAppHost(
         {
             Environment.SetEnvironmentVariable(name, null);
         }
+
+        var browserArguments = StayAwake;
+#else
+        // Con argumentos propios de la app, WebView2 ya no deja que WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS mande
+        // sobre ellos: en Debug se suman a mano, que es como se prueba la app desde fuera (el puerto de depuración).
+        var browserArguments = StayAwake;
+        var extra = Environment.GetEnvironmentVariable("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS");
+        if (!string.IsNullOrWhiteSpace(extra))
+        {
+            browserArguments += " " + extra;
+        }
 #endif
 
         // La sesión del QR vive en %LOCALAPPDATA%\Cryptwire, nunca junto al ejecutable.
@@ -63,7 +74,7 @@ internal sealed class WhatsAppHost(
         // de tus chats y, si no, Windows se los mandaría a Microsoft.
         var environment = await CoreWebView2Environment.CreateAsync(
             userDataFolder: paths.WebViewDataDir,
-            options: new CoreWebView2EnvironmentOptions(additionalBrowserArguments: StayAwake) { IsCustomCrashReportingEnabled = true });
+            options: new CoreWebView2EnvironmentOptions(additionalBrowserArguments: browserArguments) { IsCustomCrashReportingEnabled = true });
         await webView.EnsureCoreWebView2Async(environment);
         core = webView.CoreWebView2;
 

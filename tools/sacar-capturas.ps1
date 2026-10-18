@@ -225,14 +225,8 @@ function Get-PageSocket {
     $null
 }
 
-# Los argumentos del navegador para el WebView2 de Cryptwire: el puerto de depuración y la página en español.
-# Por la variable (la escucha el Debug) y por la directiva de WebView2 para Cryptwire.exe en HKCU, que manda
-# sobre lo que pida la app; en una máquina de GitHub, que se tira al acabar.
-$browserArguments = "--remote-debugging-port=$port --lang=es"
-$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = $browserArguments
-$policy = 'HKCU:\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments'
-$null = New-Item -Path $policy -Force
-$null = New-ItemProperty -Path $policy -Name (Split-Path $Exe -Leaf) -Value $browserArguments -PropertyType String -Force
+# El puerto de depuración y la página en español, por la variable que el Debug suma a sus argumentos.
+$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$port --lang=es"
 
 # El proceso principal de WebView2 (el que no lleva --type=): sus argumentos dicen si ha llegado el puerto.
 function Show-BrowserProcess {
