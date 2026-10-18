@@ -15,6 +15,18 @@ param(
 $ErrorActionPreference = 'Stop'
 trap {
     [Console]::Error.WriteLine("probar-instalador: $_")
+    # Para ver qué había en pantalla (un diálogo de error de Cryptwire, por ejemplo): en la máquina de
+    # GitHub no hay nada tuyo que salga en la captura.
+    try {
+        Get-Process -Name Cryptwire -ErrorAction SilentlyContinue | ForEach-Object { "Cryptwire abierta: '$($_.MainWindowTitle)'" }
+        Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+        $bounds = [Windows.Forms.Screen]::PrimaryScreen.Bounds
+        $bitmap = [Drawing.Bitmap]::new($bounds.Width, $bounds.Height)
+        [Drawing.Graphics]::FromImage($bitmap).CopyFromScreen($bounds.Location, [Drawing.Point]::Empty, $bounds.Size)
+        $bitmap.Save((Join-Path $Salida 'pantalla.png'), [Drawing.Imaging.ImageFormat]::Png)
+    } catch {
+        [Console]::Error.WriteLine("probar-instalador: sin captura de pantalla ($_)")
+    }
     exit 1
 }
 
@@ -135,6 +147,11 @@ Start-AsMode $exe ''
 Wait-Until { (Get-CryptwireWebViews).Count -gt 0 } 120 'no hay procesos de WebView2 con el perfil de Cryptwire'
 $webviews = Get-CryptwireWebViews
 "$($webviews.Count) procesos de WebView2 $(Split-Path (Split-Path $webviews[0].ExecutablePath -Parent) -Leaf) con el perfil de Cryptwire"
+# Que siga en pie un rato: un motor que arranca y se cae también deja procesos un momento.
+Start-Sleep -Seconds 15
+$webviews = Get-CryptwireWebViews
+"a los 15 s: $($webviews.Count) procesos ($(($webviews | ForEach-Object { if ($_.CommandLine -match '--type=([\w-]+)') { $Matches[1] } else { 'principal' } }) -join ', '))"
+if ($webviews.Count -eq 0) { throw 'el WebView2 de Cryptwire se ha cerrado.' }
 if (-not (Get-Process -Name Cryptwire -ErrorAction SilentlyContinue)) { throw 'Cryptwire no sigue abierta.' }
 
 Step 'Cerrar Cryptwire'

@@ -225,9 +225,24 @@ function Get-PageSocket {
     $null
 }
 
+# Los argumentos del navegador para el WebView2 de Cryptwire: el puerto de depuración y la página en español.
+# Por la variable (la escucha el Debug) y por la directiva de WebView2 para Cryptwire.exe en HKCU, que manda
+# sobre lo que pida la app; en una máquina de GitHub, que se tira al acabar.
+$browserArguments = "--remote-debugging-port=$port --lang=es"
+$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = $browserArguments
+$policy = 'HKCU:\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments'
+$null = New-Item -Path $policy -Force
+$null = New-ItemProperty -Path $policy -Name (Split-Path $Exe -Leaf) -Value $browserArguments -PropertyType String -Force
+
+# El proceso principal de WebView2 (el que no lleva --type=): sus argumentos dicen si ha llegado el puerto.
+function Show-BrowserProcess {
+    Get-CimInstance Win32_Process -Filter "Name = 'msedgewebview2.exe'" | Where-Object { $_.CommandLine -notmatch '--type=' } | ForEach-Object {
+        "proceso principal de WebView2: $($_.CommandLine -replace '^"[^"]*"\s*', '')"
+    }
+}
+
 # Abre Cryptwire sin vincular, con la ventana en su sitio, y espera al QR con la piel puesta.
 function Open-Cryptwire {
-    $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$port --lang=es"
     $script:process = Start-Process -FilePath $Exe -PassThru
     $script:main = Wait-Until { Get-ProcessWindows $script:process.Id | Where-Object { $_.Width -ge 700 } | Select-Object -First 1 } 60 'no aparece la ventana de Cryptwire'
     "ventana: '$($script:main.Title)'"
@@ -235,12 +250,12 @@ function Open-Cryptwire {
     try {
         $script:pageSocket = Wait-Until { Get-PageSocket } 90 'no responde el puerto de depuración'
     } catch {
-        Get-CimInstance Win32_Process -Filter "Name = 'msedgewebview2.exe'" | Select-Object -First 1 | ForEach-Object {
-            "proceso de WebView2 con el puerto: $($_.CommandLine -match 'remote-debugging-port')"
-        }
-        try { "json/list: $((Invoke-WebRequest "http://127.0.0.1:$port/json/list" -TimeoutSec 2 -UseBasicParsing).Content)" } catch { "json/list: $_" }
+        Show-BrowserProcess
+        Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalAddress -in '127.0.0.1', '::1' } |
+            ForEach-Object { "escuchando: $($_.LocalAddress):$($_.LocalPort) ($((Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Name))" }
         throw
     }
+    Show-BrowserProcess
     'página de WhatsApp: conectada'
     Wait-Until { Invoke-Page "document.querySelectorAll('canvas').length > 0 && document.readyState === 'complete'" } 120 'no sale el QR de WhatsApp Web' | Out-Null
     Start-Sleep -Seconds 4
