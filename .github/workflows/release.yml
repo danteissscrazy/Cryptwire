@@ -47,9 +47,12 @@ jobs:
           $sums = Join-Path $env:RUNNER_TEMP 'SHA256SUMS.txt'
           "$hash  $($installer.Name)" | Set-Content $sums -Encoding ascii
           $notes = Join-Path $env:RUNNER_TEMP 'notas.md'
+          $repo = "https://github.com/$env:GITHUB_REPOSITORY"
           @(
-            "Instalador para Windows 10 (1809 o posterior) y Windows 11, de 64 bits. Ver el README para instalar y actualizar.",
+            "Instalador para Windows 10 (1809 o posterior) y Windows 11, de 64 bits. Ver el [README]($repo#instalar) para instalar y actualizar.",
             "",
-            "SHA-256 de ``$($installer.Name)``: ``$hash``"
+            "SHA-256 de ``$($installer.Name)``: ``$hash``",
+            "",
+            "[Code signing policy]($repo#code-signing-policy) · [Privacidad]($repo#privacidad)"
           ) | Set-Content $notes -Encoding utf8
           gh release create $env:TAG $installer.FullName $sums --draft --verify-tag --title "Cryptwire $version" --notes-file $notes

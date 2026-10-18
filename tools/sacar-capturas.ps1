@@ -314,6 +314,19 @@ Step 'Aviso'
 Open-Cryptwire
 # El aviso solo sale si no estás en Cryptwire: se minimiza (minimizada no cuenta como estar en ella).
 $null = [Win]::ShowWindow($main.Hwnd, 6)  # SW_MINIMIZE
+# Un fondo liso en el azul noche detrás del aviso: el escritorio de una máquina de GitHub lleva la marca de
+# agua de Windows («Build …») y asomaría por las transparencias del aviso. Los avisos van siempre encima.
+# Solo la esquina donde sale el aviso: una ventana del tamaño de la pantalla cuenta como «pantalla completa»
+# y entonces Cryptwire, con razón, no enseña avisos.
+Add-Type -AssemblyName System.Windows.Forms
+$backdrop = [Windows.Forms.Form]::new()
+$backdrop.FormBorderStyle = [Windows.Forms.FormBorderStyle]::None
+$backdrop.StartPosition = [Windows.Forms.FormStartPosition]::Manual
+$backdrop.Bounds = [Drawing.Rectangle]::new($screenWidth - 720, $screenHeight - 560, 720, 560)
+$backdrop.BackColor = [Drawing.Color]::FromArgb(2, 4, 10)
+$backdrop.ShowInTaskbar = $false
+$backdrop.Show()
+[Windows.Forms.Application]::DoEvents()
 Start-Sleep -Seconds 1
 $avatar = New-AvatarDataUri
 $body = '¿Nos vemos a medianoche en la cripta?'

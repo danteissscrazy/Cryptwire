@@ -10,7 +10,7 @@ on:
         description: "También el aviso (espera casi una hora a que Windows acepte avisos)"
         type: boolean
         default: true
-  # Provisional, mientras se afina en la rama de la fase (workflow_dispatch solo vale desde main): sin aviso.
+  # Provisional, mientras se afina en la rama de la fase (workflow_dispatch solo vale desde main).
   push:
     branches: [fase-6]
     paths: [tools/sacar-capturas.ps1, .github/workflows/capturas.yml, themes/**]
@@ -44,7 +44,7 @@ jobs:
 
       - name: Capturas
         env:
-          SIN_AVISO: ${{ github.event_name == 'push' || inputs.aviso == false }}
+          SIN_AVISO: ${{ github.event_name == 'workflow_dispatch' && inputs.aviso == false }}
         run: |
           $options = @{}
           if ($env:SIN_AVISO -eq 'true') { $options.SinAviso = $true }

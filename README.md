@@ -1,30 +1,65 @@
-# Cryptwire
+<p align="center">
+  <img src="src/Cryptwire.App/Assets/logo.svg" width="96" alt="" />
+</p>
 
-Cliente de escritorio para Windows que viste WhatsApp Web con pieles gótico-cyberpunk, tonos de
-notificación y fondos a tu elección.
+<h1 align="center">Cryptwire</h1>
 
-> En desarrollo. Proyecto independiente, sin relación con WhatsApp ni con Meta.
+<p align="center">
+  WhatsApp de escritorio para Windows con piel gótico-cyberpunk, tus tonos y tus fondos.
+</p>
+
+<p align="center">
+  <a href="https://github.com/danteissscrazy/Cryptwire/releases/latest"><b>Descargar</b></a> ·
+  <a href="#instalar">Instalar</a> ·
+  <a href="#pieles">Pieles</a> ·
+  <a href="#privacidad">Privacidad</a> ·
+  <a href="#code-signing-policy">Code signing policy</a>
+</p>
+
+![Los ajustes de Cryptwire con la piel Relicario](docs/capturas/ajustes.png)
+
+Cryptwire abre WhatsApp Web en una ventana propia y la viste con una piel: el Relicario de serie, en azul
+noche, plata, oro y filo de hielo, o la tuya. Añade lo que la web no tiene: avisos propios con la foto del
+contacto, un tono para cada chat y otro para las llamadas, tu fondo en la conversación, bandeja, inicio con
+Windows y widgets.
+
+> Proyecto independiente, sin relación con WhatsApp ni con Meta. WhatsApp es una marca de WhatsApp LLC.
+
+**In English:** Cryptwire is a Windows desktop client for WhatsApp Web with a gothic-cyberpunk skin engine,
+custom notification tones per chat, custom wallpapers, its own notifications, tray icon and autostart. It runs
+the official WhatsApp Web inside Microsoft Edge WebView2 and only restyles it with CSS: no unofficial APIs, no
+automation. The interface is in Spanish.
 
 ## Cómo funciona
 
 Cryptwire abre WhatsApp Web dentro de una ventana propia (WebView2, el motor de Microsoft Edge) y le
-aplica una piel en CSS. No usa APIs no oficiales, no automatiza nada y no lee ni guarda tus mensajes:
-el cifrado de extremo a extremo lo sigue haciendo WhatsApp Web.
+aplica una piel en CSS. No usa APIs no oficiales, no automatiza nada y no guarda tus mensajes ni los manda
+a ningún sitio: de lo que llega solo enseña el aviso (quién y qué), en memoria. El cifrado de extremo a
+extremo lo sigue haciendo WhatsApp Web.
+
+La piel cambia la página solo en tu PC, pero WhatsApp Web puede notar que lleva estilos y scripts que no son
+suyos. Es su servicio y sus condiciones: úsala sabiéndolo.
 
 ## Instalar
 
-Para Windows 10 (1809 o posterior) y Windows 11, de 64 bits. Ejecuta `Cryptwire-<versión>-instalador.exe`:
+Para Windows 10 (1809 o posterior) y Windows 11, de 64 bits. Descarga
+`Cryptwire-<versión>-instalador.exe` de la [última versión](https://github.com/danteissscrazy/Cryptwire/releases/latest)
+y ejecútalo:
 
 - Se instala solo para tu usuario, sin pedir permisos de administrador, en
   `%LOCALAPPDATA%\Programs\Cryptwire`. Lleva .NET dentro; si a tu PC le falta Microsoft Edge WebView2 (el
   motor que pinta WhatsApp Web), instala el de Microsoft.
 - El instalador todavía no va firmado: la primera vez, Windows SmartScreen avisa de que es una app que no
-  reconoce. Para seguir: **Más información › Ejecutar de todas formas**.
+  reconoce. Para seguir: **Más información › Ejecutar de todas formas**. Cada versión trae su SHA-256 en
+  `SHA256SUMS.txt` para comprobar que el fichero es el que salió de GitHub
+  (`Get-FileHash Cryptwire-<versión>-instalador.exe`).
 - Al abrir Cryptwire, vincúlala desde el móvil: en WhatsApp, **Dispositivos vinculados › Vincular un
   dispositivo**, y escanea el código QR. Cada PC se vincula por separado.
 - Actualizar es instalar la versión nueva encima: cierra la que está abierta y no toca tus datos (sesión,
   ajustes, tonos y fondos, en `%LOCALAPPDATA%\Cryptwire`). Desinstalar (Configuración › Aplicaciones)
   pregunta si los borra también.
+
+![Cryptwire recién instalada, lista para vincular: la ventana, la barra de título y los widgets son de Cryptwire; dentro, WhatsApp Web con el QR difuminado](docs/capturas/ventana.png)
 
 ## Pieles
 
@@ -70,6 +105,10 @@ capas.
 Todo se cambia en **Ajustes de Cryptwire**: el botón «Ajustes» de la barra de título, el menú de la
 ventana o el icono de la bandeja. Se guarda en `%LOCALAPPDATA%\Cryptwire\settings.json`.
 
+<p align="center">
+  <img src="docs/capturas/aviso.png" width="440" alt="Un aviso de Cryptwire: la foto del contacto dentro del marco de cuchillas, su nombre y el mensaje" />
+</p>
+
 | Para | Haz |
 |---|---|
 | Un tono propio para un chat | Ajustes › Tonos por chat: escribe su nombre tal como sale en WhatsApp (o pulsa uno de los que te han avisado) y elige el tono. Vale para contactos y grupos, y para sus llamadas |
@@ -93,6 +132,60 @@ lanza desde su *service worker*, y WebView2 no deja interceptar esos avisos. Cry
 página un pequeño puente que los convierte en avisos normales, para que suenen con tu tono y salgan con
 la piel; con el modo seguro el puente se quita y vuelven a salir como avisos de Windows. Pulsar uno de
 esos avisos trae Cryptwire delante, donde WhatsApp enseña la llamada.
+
+
+## Privacidad
+
+Cryptwire no manda nada a ningún sitio por su cuenta: ni telemetría, ni estadísticas, ni comprobaciones de
+versiones nuevas. Las únicas conexiones son estas:
+
+- **WhatsApp Web**, que habla con los servidores de WhatsApp como en cualquier navegador: es lo que abres.
+- **La foto del contacto de un aviso**, que se pide solo a los servidores de WhatsApp (`whatsapp.net` y
+  `whatsapp.com`, por HTTPS). Si no se puede, el aviso sale con su inicial.
+- **El instalador**, si a tu PC le falta Microsoft Edge WebView2, ejecuta el instalador de Microsoft, que lo
+  descarga de Microsoft.
+- **Microsoft Edge WebView2** es un componente de Microsoft y sigue tus ajustes de diagnóstico de Windows; lo
+  que mande es cosa de Microsoft ([su declaración de privacidad](https://privacy.microsoft.com/privacystatement)).
+
+Tu sesión de WhatsApp, tus ajustes, tus tonos y tus fondos se quedan en `%LOCALAPPDATA%\Cryptwire`.
+
+## Seguridad
+
+Para avisar de un fallo de seguridad, en privado: [SECURITY.md](SECURITY.md).
+
+Cada commit pasa por un hook que bloquea secretos y datos personales, y cada versión sale de la CI de GitHub
+desde el commit etiquetado: historial sin secretos, tests, la app publicada y el instalador entero escaneados,
+y el instalador probado en un Windows sin WebView2. El instalador de WebView2 que va dentro se comprueba por su
+firma de Microsoft, y las herramientas que descarga la CI, por su SHA-256.
+
+## Code signing policy
+
+Las versiones todavía no van firmadas. Cuando SignPath Foundation acepte el proyecto, el instalador de cada
+versión se firmará así (en inglés, como lo pide SignPath):
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
+[SignPath Foundation](https://signpath.org/).
+
+- Only installers built by the [Release workflow](.github/workflows/release.yml) on GitHub-hosted runners,
+  from a tagged commit of this repository, are submitted for signing. Nothing built on a personal machine is
+  signed.
+- Every signing request is approved manually by an approver.
+- Team roles:
+  - Committers and reviewers: [@danteissscrazy](https://github.com/danteissscrazy)
+  - Approvers: [@danteissscrazy](https://github.com/danteissscrazy)
+- Changes from outside contributors, including build scripts and CI configuration, are reviewed by a committer
+  before they are merged.
+- Team members use multi-factor authentication on GitHub and on SignPath.
+- Privacy: this program will not transfer any information to other networked systems unless specifically
+  requested by the user or the person installing or operating it. See [Privacidad](#privacidad) for the
+  connections made by WhatsApp Web, Microsoft Edge WebView2 and the installer.
+
+## Contribuir
+
+Los issues y los pull requests son bienvenidos; lo que aportes se publica con la licencia MIT del repo. Antes
+de un pull request grande, abre un issue para hablarlo.
+Activa el hook de pre-commit (`git config core.hooksPath .githooks`): exige un email `noreply` de GitHub y
+bloquea secretos. Las pieles nuevas, con sus fuentes e imágenes de licencia libre y su `LICENCIAS.md`.
 
 ## Desarrollo
 
@@ -146,14 +239,30 @@ pwsh tools/empaquetar.ps1
 ```
 
 Necesita [Inno Setup](https://jrsoftware.org/isinfo.php) 6.7 o posterior. Ejecuta `publicar.ps1`, mete
-dentro el instalador de WebView2 de Microsoft (lo descarga y comprueba que lo firma Microsoft; con
-`-WebView2 <ruta>` usa uno que ya tengas) y compila `installer/Cryptwire.iss` dos veces: primero sin
-comprimir nada, ni los ficheros ni la cabecera (textos, código y lista de ficheros), para que el escáner
-lea el instalador entero, y después comprimido. El resultado queda en `artifacts/instalador`.
+dentro el instalador de WebView2 de Microsoft (lo descarga y comprueba que es el de Microsoft Edge Update,
+firmado por Microsoft; con `-WebView2 <ruta>` usa uno que ya tengas) y compila `installer/Cryptwire.iss` dos
+veces: primero sin comprimir nada, ni los ficheros ni la cabecera (textos, código y lista de ficheros), para
+que el escáner lea el instalador entero, y después comprimido. El resultado queda en `artifacts/instalador`.
 
-La CI de GitHub (`.github/workflows/ci.yml`) hace lo mismo en cada push a `main` o a una rama `fase-*` y
-en cada pull request, y deja el instalador como artefacto. Allí no hay reglas de datos personales: el
+La CI de GitHub (`.github/workflows/ci.yml`) hace lo mismo en cada push a `main` y en cada pull request, y
+después prueba el instalador en máquinas de GitHub sin WebView2 (`tools/probar-instalador.ps1`, que quita
+WebView2 y por eso solo corre allí): sin permisos de administrador y elevado, tiene que instalar WebView2,
+arrancar Cryptwire con él y negarse a instalarse en otra carpeta. Allí no hay reglas de datos personales: el
 escáner avisa y sigue con las de secretos y las de rutas.
+
+## Versiones
+
+```
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+La etiqueta tiene que ser la versión de `Directory.Build.props`. `.github/workflows/release.yml` pasa la CI
+entera y, si todo sale bien, deja un borrador de release con el instalador y su `SHA256SUMS.txt`. El borrador
+se revisa y se publica a mano.
+
+Las capturas de este README salen de `.github/workflows/capturas.yml` (`tools/sacar-capturas.ps1`): Cryptwire
+sin vincular en una máquina limpia de GitHub, así que no sale ningún chat ni contacto de nadie.
 
 ## Estructura
 
@@ -164,4 +273,10 @@ escáner avisa y sigue con las de secretos y las de rutas.
 | `tests/Cryptwire.Core.Tests` | Tests unitarios de `Core` (xUnit) |
 | `themes/` | Las pieles: CSS más sus fondos, fuentes y tonos. Ver `LICENCIAS.md` en cada una |
 | `installer/` | El instalador de Inno Setup (`Cryptwire.iss`) y las imágenes del asistente (`tools/generar-imagenes-instalador.ps1`) |
-| `tools/` | Scripts auxiliares: publicar, escanear lo publicado y empaquetar (`publicar.ps1`, `escanear-binario.ps1`, `probar-escaner.ps1`, `empaquetar.ps1`), los tonos (`generar-tono-prueba.py`, `generar-tono-llamada.py`), el icono (`generar-iconos.ps1`, desde `src/Cryptwire.App/Assets/logo.svg`), la marca de la barra de título (`generar-marca.ps1`) y la Cinzel fija de la ventana (`generar-cinzel-estatica.py`) |
+| `tools/` | Scripts auxiliares: publicar, escanear lo publicado y empaquetar (`publicar.ps1`, `escanear-binario.ps1`, `probar-escaner.ps1`, `empaquetar.ps1`), las pruebas que solo corren en GitHub (`probar-instalador.ps1`, `sacar-capturas.ps1`), los tonos (`generar-tono-prueba.py`, `generar-tono-llamada.py`), el icono (`generar-iconos.ps1`, desde `src/Cryptwire.App/Assets/logo.svg`), la marca de la barra de título (`generar-marca.ps1`) y la Cinzel fija de la ventana (`generar-cinzel-estatica.py`) |
+| `docs/capturas/` | Las capturas de este README |
+
+## Licencia
+
+[MIT](LICENSE). Lo que es de terceros (.NET, el SDK de WebView2, las fuentes) va con su licencia en
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) y en el `LICENCIAS.md` de cada piel.
