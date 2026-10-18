@@ -263,18 +263,19 @@ header:has([data-testid="navbar-primary-section"]) [role="status"],
   text-shadow: 0 1px 1px rgba(0, 0, 0, .4);
 }
 
-/* Cabecera de la lista: «◆ CHATS // ENLACES» en lugar del logotipo. */
-[data-testid="wa-wordmark"] {
+/* Cabecera de la lista: «◆ CHATS // ENLACES» en lugar del logotipo. Solo con la lista de chats en la
+   página: la de vincular el móvil lleva el mismo logotipo y ahí no pinta nada. */
+body:has(#pane-side) [data-testid="wa-wordmark"] {
   display: flex !important;
   align-items: baseline;
   gap: 12px;
 }
 
-[data-testid="wa-wordmark"] > * {
+body:has(#pane-side) [data-testid="wa-wordmark"] > * {
   display: none !important;
 }
 
-[data-testid="wa-wordmark"]::before {
+body:has(#pane-side) [data-testid="wa-wordmark"]::before {
   content: "Chats";
   display: flex;
   align-items: center;
@@ -285,7 +286,7 @@ header:has([data-testid="navbar-primary-section"]) [role="status"],
   color: var(--cw-silver-50);
 }
 
-[data-testid="wa-wordmark"]::after {
+body:has(#pane-side) [data-testid="wa-wordmark"]::after {
   content: "// enlaces";
   font: 400 11px/1 var(--cw-font-meta);
   letter-spacing: var(--cw-label-track);
@@ -293,14 +294,14 @@ header:has([data-testid="navbar-primary-section"]) [role="status"],
   color: var(--cw-ice-400);
 }
 
-header:has([data-testid="wa-wordmark"]) {
+body:has(#pane-side) header:has([data-testid="wa-wordmark"]) {
   background:
     linear-gradient(var(--cw-ice-400) 0 0) left 20px bottom 3px / 40px 1.5px no-repeat,
     linear-gradient(90deg, rgba(220, 182, 99, .45), transparent) left 66px bottom 3px / 55% 1px no-repeat,
     var(--cw-bg-panel) !important;
 }
 
-header:has([data-testid="wa-wordmark"]) h2::before {
+body:has(#pane-side) header:has([data-testid="wa-wordmark"]) h2::before {
   content: "";
   flex: none;
   width: 8px;
@@ -312,13 +313,13 @@ header:has([data-testid="wa-wordmark"]) h2::before {
   box-shadow: 0 0 8px rgba(240, 71, 92, .8);
 }
 
-header:has([data-testid="wa-wordmark"]) h2 {
+body:has(#pane-side) header:has([data-testid="wa-wordmark"]) h2 {
   display: flex !important;
   align-items: center;
 }
 
 /* Nuevo chat: bloque de oro recortado, como el botón de enviar. */
-header:has([data-testid="wa-wordmark"]) button:not([aria-haspopup]) {
+body:has(#pane-side) header:has([data-testid="wa-wordmark"]) button:not([aria-haspopup]) {
   border-radius: 0 !important;
   clip-path: var(--cw-chamfer-sm);
   background: linear-gradient(160deg, var(--cw-gold-300), var(--cw-gold-500)) !important;

@@ -3,7 +3,9 @@ param(
     # depuración, que es por donde se tapa el QR y se lanza el aviso de ejemplo.
     [Parameter(Mandatory)] [string] $Exe,
     # Carpeta donde quedan las capturas (PNG).
-    [Parameter(Mandatory)] [string] $Salida
+    [Parameter(Mandatory)] [string] $Salida,
+    # Solo la ventana y los ajustes: el aviso obliga a esperar casi una hora (ver abajo).
+    [switch] $SinAviso
 )
 # Las capturas del README, en una máquina limpia de GitHub: Cryptwire recién instalada, sin vincular a
 # ninguna cuenta, así que no sale ningún chat ni contacto de nadie. El QR de vincular se difumina (es de
@@ -285,6 +287,10 @@ Save-Window $settings.Hwnd '02-ajustes.png'
 [Windows.Automation.AutomationElement]::FromHandle($settings.Hwnd).GetCurrentPattern([Windows.Automation.WindowPattern]::Pattern).Close()
 Start-Sleep -Seconds 1
 Close-Cryptwire
+if ($SinAviso) {
+    'OK (sin aviso)'
+    exit 0
+}
 
 # Windows no deja salir avisos en la primera hora tras el primer inicio de sesión (horas tranquilas, estado 6)
 # y Cryptwire lo respeta. Una máquina de GitHub acaba de iniciar sesión por primera vez: se espera a que acaben.
