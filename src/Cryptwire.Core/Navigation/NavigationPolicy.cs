@@ -71,6 +71,33 @@ public sealed class NavigationPolicy
     public static bool IsWhatsApp(string? url) =>
         Uri.TryCreate(url, UriKind.Absolute, out var uri) && IsWhatsApp(uri);
 
+    private static readonly string[] MailtoFields = ["to", "cc", "bcc", "subject", "body"];
+
+    /// <summary>
+    /// La dirección que se abre fuera de la app, en su forma normalizada, o null si no lo es. De un
+    /// <c>mailto:</c> solo quedan los destinatarios, el asunto y el cuerpo: algunos programas de correo
+    /// aceptan <c>attach=</c> y pondrían en el borrador un fichero de tu PC.
+    /// </summary>
+    public static string? ExternalTarget(string? url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return null;
+        }
+
+        if (uri.Scheme != Uri.UriSchemeMailto)
+        {
+            return uri.AbsoluteUri;
+        }
+
+        var kept = uri.Query.TrimStart('?')
+            .Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Where(field => MailtoFields.Contains(field.Split('=', 2)[0], StringComparer.OrdinalIgnoreCase))
+            .ToArray();
+        var address = uri.GetLeftPart(UriPartial.Path);
+        return kept.Length > 0 ? $"{address}?{string.Join('&', kept)}" : address;
+    }
+
     private static NavigationDecision Classify(string? url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))

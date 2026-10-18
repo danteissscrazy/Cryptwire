@@ -98,12 +98,11 @@ public sealed class WidgetsTests : IDisposable
     }
 
     [Fact]
-    public void ThePageGetsSkinThenWallpaperThenVeil()
+    public void ThePageGetsSkinThenWallpaperThenVeilEachOnItsOwn()
     {
-        var css = PageCss.Compose("/*piel*/", "/*fondo*/", veil: true)!;
+        var layers = PageCss.Compose("/*piel*/", "/*fondo*/", veil: true);
 
-        Assert.StartsWith("/*piel*//*fondo*/", css, StringComparison.Ordinal);
-        Assert.EndsWith(VeilCss.Css, css, StringComparison.Ordinal);
+        Assert.Equal(["/*piel*/", "/*fondo*/", VeilCss.Css], layers);
     }
 
     [Theory]
@@ -111,21 +110,18 @@ public sealed class WidgetsTests : IDisposable
     [InlineData(null, null, true, "velo")]
     [InlineData("/*piel*/", null, false, "/*piel*/")]
     [InlineData(null, "/*fondo*/", false, "/*fondo*/")]
+    [InlineData("", "", false, null)]
     public void WithNothingToPutThePageStaysAsItIs(string? skin, string? wallpaper, bool veil, string? expected)
     {
-        var css = PageCss.Compose(skin, wallpaper, veil);
+        var layers = PageCss.Compose(skin, wallpaper, veil);
 
         if (expected is null)
         {
-            Assert.Null(css);
-        }
-        else if (expected == "velo")
-        {
-            Assert.Equal(VeilCss.Css, css);
+            Assert.Null(layers);
         }
         else
         {
-            Assert.Equal(expected, css);
+            Assert.Equal([expected == "velo" ? VeilCss.Css : expected], layers);
         }
     }
 

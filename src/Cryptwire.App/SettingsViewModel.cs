@@ -10,6 +10,7 @@ using Cryptwire.Core;
 using Cryptwire.Core.Notifications;
 using Cryptwire.Core.Settings;
 using Cryptwire.Core.Tones;
+using Cryptwire.Core.Wallpapers;
 using Cryptwire.Core.Widgets;
 using Microsoft.Win32;
 
@@ -267,25 +268,31 @@ internal sealed class SettingsViewModel : INotifyPropertyChanged
         _ => skinTone,
     };
 
-    private static ImageSource? LoadPreview(string? file)
+    /// <summary>
+    /// La misma regla que el fondo de la página (<see cref="WallpaperCss"/>): solo una imagen de verdad de la
+    /// carpeta de fondos. Un <c>settings.json</c> retocado no puede hacer que los ajustes abran otra cosa, como
+    /// una imagen de una carpeta de red (que le mandaría tu usuario de Windows) o un formato raro.
+    /// </summary>
+    private static ImageSource? LoadPreview(string? file, string wallpapersDir)
     {
-        if (file is null || !File.Exists(file))
+        if (ContainedFiles.TryRead(wallpapersDir, file, WallpaperCss.MaxBytes) is not { } bytes || WallpaperCss.ImageMime(bytes) is null)
         {
             return null;
         }
 
         try
         {
+            using var stream = new MemoryStream(bytes, writable: false);
             var image = new BitmapImage();
             image.BeginInit();
-            image.UriSource = new Uri(file, UriKind.Absolute);
+            image.StreamSource = stream;
             image.DecodePixelWidth = 360;
-            image.CacheOption = BitmapCacheOption.OnLoad; // sin dejar el fichero abierto
+            image.CacheOption = BitmapCacheOption.OnLoad; // lo lee entero aquí: el stream se puede cerrar
             image.EndInit();
             image.Freeze();
             return image;
         }
-        catch (Exception e) when (e is IOException or NotSupportedException or FileFormatException or UnauthorizedAccessException)
+        catch (Exception e) when (e is IOException or NotSupportedException or FileFormatException or ArgumentException or InvalidOperationException)
         {
             return null;
         }
@@ -319,7 +326,7 @@ internal sealed class SettingsViewModel : INotifyPropertyChanged
             wallpaperDim = skins.Settings.Wallpaper?.Dim ?? WallpaperSettings.DefaultDim;
         }
 
-        WallpaperPreview = LoadPreview(skins.Settings.Wallpaper?.File);
+        WallpaperPreview = LoadPreview(skins.Settings.Wallpaper?.File, paths.WallpapersDir);
         Notify(string.Empty);
     }
 

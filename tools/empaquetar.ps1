@@ -52,8 +52,19 @@ if ($WebView2) {
 }
 $signature = Get-AuthenticodeSignature -LiteralPath $bootstrapper
 $size = (Get-Item -LiteralPath $bootstrapper).Length
-if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch '^CN=Microsoft Corporation,') {
+if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch '^CN=Microsoft Corporation,' -or
+    $signature.SignerCertificate.Issuer -notmatch '^CN=Microsoft Code Signing PCA') {
     Stop-Package "el instalador de WebView2 no lleva una firma válida de Microsoft ($($signature.Status))."
+}
+# No vale cualquier programa firmado por Microsoft: tiene que ser el instalador pequeño de Edge Update (el de
+# WebView2 lo es, con su etiqueta), y su cadena tiene que acabar en la raíz de Microsoft.
+$chain = [Security.Cryptography.X509Certificates.X509Chain]::new()
+$null = $chain.Build($signature.SignerCertificate)
+$root = $chain.ChainElements[$chain.ChainElements.Count - 1].Certificate.Subject
+$info = (Get-Item -LiteralPath $bootstrapper).VersionInfo
+if ($root -notmatch '^CN=Microsoft Root Certificate Authority' -or $info.OriginalFilename -ne 'MicrosoftEdgeUpdateSetup.exe' -or
+    $info.ProductName -ne 'Microsoft Edge Update') {
+    Stop-Package "el instalador de WebView2 no es el de Microsoft Edge Update ($($info.OriginalFilename), $($info.ProductName))."
 }
 if ($size -gt 10MB) { Stop-Package "el instalador de WebView2 mide $size bytes: no es el pequeño de Microsoft." }
 "firma válida de Microsoft Corporation, $([Math]::Round($size / 1KB)) KB"

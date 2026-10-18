@@ -17,11 +17,11 @@ internal sealed class SkinInjector(CoreWebView2 core)
     private string? bridgeScriptId;
 
     /// <summary>
-    /// Pone el puente, el divisor y la piel; sin CSS (no hay piel ni fondo), solo el puente y el divisor. El
-    /// script nuevo de la piel se añade antes de quitar el viejo: una navegación justo entre medias nunca se
-    /// queda sin piel, y si añadirlo falla, sigue el anterior.
+    /// Pone el puente, el divisor y la piel (sus capas de CSS: piel, fondo y velo); sin capas, solo el puente
+    /// y el divisor. El script nuevo de la piel se añade antes de quitar el viejo: una navegación justo entre
+    /// medias nunca se queda sin piel, y si añadirlo falla, sigue el anterior.
     /// </summary>
-    public async Task ApplyAsync(string? css)
+    public async Task ApplyAsync(IReadOnlyList<string>? layers)
     {
         if (bridgeScriptId is null)
         {
@@ -35,13 +35,13 @@ internal sealed class SkinInjector(CoreWebView2 core)
             await core.ExecuteScriptAsync(LayoutScript.Install());
         }
 
-        if (css is null)
+        if (layers is null)
         {
             await RemoveSkinAsync();
             return;
         }
 
-        var script = SkinScript.Apply(css);
+        var script = SkinScript.Apply(layers);
         var previous = skinScriptId;
         skinScriptId = await core.AddScriptToExecuteOnDocumentCreatedAsync(script);
         Forget(previous);

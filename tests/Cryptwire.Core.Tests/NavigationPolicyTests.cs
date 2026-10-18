@@ -123,4 +123,16 @@ public class NavigationPolicyTests
     [InlineData(null, false)]
     public void OnlyWhatsAppWebCountsAsWhatsApp(string? origin, bool expected) =>
         Assert.Equal(expected, NavigationPolicy.IsWhatsApp(origin));
+
+    [Theory]
+    [InlineData("https://example.com/a b", "https://example.com/a%20b")]
+    [InlineData("mailto:alguien@example.com", "mailto:alguien@example.com")]
+    [InlineData("mailto:alguien@example.com?subject=hola&body=que%20tal", "mailto:alguien@example.com?subject=hola&body=que%20tal")]
+    [InlineData("mailto:alguien@example.com?subject=hola&attach=C:\\Users\\yo\\clave.txt", "mailto:alguien@example.com?subject=hola")]
+    [InlineData("mailto:alguien@example.com?ATTACH=x&Attachment=y&att%61ch=z", "mailto:alguien@example.com")]
+    [InlineData("mailto:?to=alguien@example.com&cc=otro@example.com&attach=/etc/passwd", "mailto:?to=alguien@example.com&cc=otro@example.com")]
+    [InlineData("no es una url", null)]
+    [InlineData(null, null)]
+    public void WhatOpensOutsideIsNormalizedAndMailtoCarriesNoAttachments(string? url, string? expected) =>
+        Assert.Equal(expected, NavigationPolicy.ExternalTarget(url));
 }

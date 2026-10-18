@@ -34,6 +34,8 @@ VersionInfoDescription=Instalador de Cryptwire
 PrivilegesRequired=lowest
 DefaultDirName={autopf}\Cryptwire
 DisableDirPage=yes
+; Siempre la de DefaultDirName, también al actualizar (ver PrepareToInstall).
+UsePreviousAppDir=no
 DisableWelcomePage=no
 DefaultGroupName=Cryptwire
 DisableProgramGroupPage=yes
@@ -215,8 +217,18 @@ begin
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  Expected: String;
 begin
   Result := '';
+  { Esconder la página de la carpeta no basta: /DIR= la cambia igual. En una carpeta donde otros usuarios
+    del PC puedan escribir (C:\Cryptwire) podrían cambiar las DLL que arranca el inicio con Windows. }
+  Expected := ExpandConstant('{userpf}\Cryptwire');
+  if CompareText(RemoveBackslashUnlessRoot(ExpandConstant('{app}')), Expected) <> 0 then
+  begin
+    Result := 'Cryptwire se instala siempre en ' + Expected + ', una carpeta solo tuya: en otra, otros usuarios del PC podrían cambiar lo que arranca contigo.';
+    Exit;
+  end;
   if not CloseCryptwire then
     Result := 'Cryptwire sigue abierta y no se ha podido cerrar. Ciérrala (clic derecho en su icono de la bandeja › Salir) y vuelve a abrir el instalador.';
 end;

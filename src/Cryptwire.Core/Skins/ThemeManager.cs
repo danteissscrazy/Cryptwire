@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -147,8 +148,10 @@ public sealed class ThemeManager
 
     /// <summary>
     /// Si un tono de la piel se puede abrir: un fichero de verdad, no un enlace (uno a una carpeta de red
-    /// haría que cada aviso le mandara tu usuario de Windows), y un WAV por sus bytes, no por su nombre
-    /// (otro formato acabaría en cualquier códec instalado). La piel puede venir de internet.
+    /// haría que cada aviso le mandara tu usuario de Windows), y un WAV de muestras sin comprimir por sus
+    /// bytes, no por su nombre. Dentro de un WAV puede ir casi cualquier códec (MP3, ADPCM, GSM…) y lo
+    /// abriría el que esté instalado, fuera del sandbox del navegador: solo pasan PCM y coma flotante. La
+    /// piel puede venir de internet.
     /// </summary>
     public static bool IsWaveFile(string path)
     {
@@ -160,17 +163,84 @@ public sealed class ThemeManager
                 return false;
             }
 
-            Span<byte> header = stackalloc byte[12];
             using var file = info.OpenRead();
-            return file.ReadAtLeast(header, header.Length, throwOnEndOfStream: false) == header.Length
-                && header[..4].SequenceEqual("RIFF"u8)
-                && header[8..].SequenceEqual("WAVE"u8);
+            return IsPlainWave(file);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
             return false;
         }
     }
+
+    private const ushort WavePcm = 1;
+    private const ushort WaveFloat = 3;
+    private const ushort WaveExtensible = 0xFFFE;
+
+    /// <summary>
+    /// «RIFF», «WAVE» y, entre los primeros trozos, uno «fmt » con muestras PCM o en coma flotante (también
+    /// en la forma extensible, que lleva el formato en un GUID).
+    /// </summary>
+    private static bool IsPlainWave(Stream file)
+    {
+        Span<byte> header = stackalloc byte[12];
+        if (file.ReadAtLeast(header, header.Length, throwOnEndOfStream: false) != header.Length
+            || !header[..4].SequenceEqual("RIFF"u8)
+            || !header[8..].SequenceEqual("WAVE"u8))
+        {
+            return false;
+        }
+
+        Span<byte> chunk = stackalloc byte[8];
+        Span<byte> buffer = stackalloc byte[64];
+        for (var i = 0; i < 16; i++)
+        {
+            if (file.ReadAtLeast(chunk, chunk.Length, throwOnEndOfStream: false) != chunk.Length)
+            {
+                return false;
+            }
+
+            var size = BinaryPrimitives.ReadUInt32LittleEndian(chunk[4..]);
+            if (!chunk[..4].SequenceEqual("fmt "u8))
+            {
+                // Los trozos van alineados a 2 bytes.
+                var skip = size + (size & 1);
+                if (skip > file.Length - file.Position)
+                {
+                    return false;
+                }
+
+                file.Seek(skip, SeekOrigin.Current);
+                continue;
+            }
+
+            if (size < 16 || size > 64)
+            {
+                return false;
+            }
+
+            var format = buffer[..(int)size];
+            if (file.ReadAtLeast(format, format.Length, throwOnEndOfStream: false) != format.Length)
+            {
+                return false;
+            }
+
+            var tag = BinaryPrimitives.ReadUInt16LittleEndian(format);
+            if (tag is WavePcm or WaveFloat)
+            {
+                return true;
+            }
+
+            // WAVE_FORMAT_EXTENSIBLE: el formato de verdad va en SubFormat (byte 24), un GUID
+            // {0000000X-0000-0010-8000-00AA00389B71} con X = 1 (PCM) o 3 (coma flotante).
+            return tag == WaveExtensible && size >= 40
+                && BinaryPrimitives.ReadUInt32LittleEndian(format[24..]) is WavePcm or WaveFloat
+                && format[28..40].SequenceEqual(ExtensibleGuidTail);
+        }
+
+        return false;
+    }
+
+    private static ReadOnlySpan<byte> ExtensibleGuidTail => [0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71];
 
     private static byte[]? ReadAsset(string root, string path)
     {

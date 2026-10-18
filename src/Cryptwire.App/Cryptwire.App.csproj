@@ -19,6 +19,9 @@
     <SatelliteResourceLanguages>es</SatelliteResourceLanguages>
     <!-- Lo que se distribuye va sin .pdb: a quien instala no le sirve. -->
     <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+    <!-- Como con las variables WEBVIEW2_*: una DOTNET_STARTUP_HOOKS que sobrara de algo metería otro
+         ensamblado dentro de Cryptwire, con tu sesión de WhatsApp abierta. -->
+    <StartupHookSupport>false</StartupHookSupport>
   </PropertyGroup>
 
   <!-- Windows Forms se usa por su nombre completo: así sus Application, Button o Color no chocan con los de WPF. -->

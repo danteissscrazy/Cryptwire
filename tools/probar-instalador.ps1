@@ -140,4 +140,15 @@ Start-AsMode $exe '--salir'
 Wait-Until { -not (Get-Process -Name Cryptwire -ErrorAction SilentlyContinue) } 30 'Cryptwire no se ha cerrado con --salir'
 'cerrada con --salir'
 
-"`nOK: sin WebView2, el instalador ($Modo) lo instala y Cryptwire arranca con él."
+# La carpeta no se puede cambiar ni a mano (/DIR=): en una compartida, otros podrían cambiar lo que arranca.
+Step 'Otra carpeta se rechaza'
+$other = Join-Path $Salida 'otra-carpeta'
+$otherLog = Join-Path $Salida 'instalador-otra-carpeta.log'
+Start-AsMode $Instalador "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /DIR=$other /LOG=$otherLog"
+Wait-Until { (Test-Path $otherLog) -and (Select-String -Path $otherLog -Pattern 'Log closed.' -SimpleMatch -Quiet) } 300 'el instalador no ha terminado'
+if (Select-String -Path $otherLog -Pattern 'Installation process succeeded' -SimpleMatch -Quiet) { throw "el instalador ha aceptado otra carpeta ($other)." }
+if (Test-Path (Join-Path $other 'Cryptwire.exe')) { throw "hay una Cryptwire en $other." }
+if (-not (Select-String -Path $otherLog -Pattern 'se instala siempre en' -SimpleMatch -Quiet)) { throw 'el instalador ha fallado, pero no por la carpeta (ver instalador-otra-carpeta.log).' }
+"rechazada: $other"
+
+"`nOK: sin WebView2, el instalador ($Modo) lo instala, Cryptwire arranca con él y no se instala en otra carpeta."

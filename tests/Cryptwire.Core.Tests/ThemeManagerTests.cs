@@ -157,7 +157,7 @@ public sealed class ThemeManagerTests : IDisposable
     public void ASkinToneHasToBeARealWaveFile()
     {
         var wave = Path.Combine(app.Path, "tono.wav");
-        File.WriteAllBytes(wave, [.. "RIFF"u8, 4, 0, 0, 0, .. "WAVE"u8, .. "fmt "u8]);
+        File.WriteAllBytes(wave, Wave(1));
         var mp3 = Path.Combine(app.Path, "falso.wav");
         File.WriteAllBytes(mp3, [0x49, 0x44, 0x33, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
         var cut = Path.Combine(app.Path, "corto.wav");
@@ -170,6 +170,71 @@ public sealed class ThemeManagerTests : IDisposable
         Assert.False(ThemeManager.IsWaveFile(avi));
         Assert.False(ThemeManager.IsWaveFile(cut));
         Assert.False(ThemeManager.IsWaveFile(Path.Combine(app.Path, "no-esta.wav")));
+    }
+
+    [Theory]
+    [InlineData(1, true)]       // PCM
+    [InlineData(3, true)]       // coma flotante
+    [InlineData(2, false)]      // ADPCM de Microsoft
+    [InlineData(0x55, false)]   // MP3 dentro de un WAV
+    [InlineData(0x31, false)]   // GSM 6.10
+    public void ASkinToneOnlyOpensUncompressedSamples(int tag, bool opens)
+    {
+        var wave = Path.Combine(app.Path, "tono.wav");
+        File.WriteAllBytes(wave, Wave((ushort)tag));
+
+        Assert.Equal(opens, ThemeManager.IsWaveFile(wave));
+    }
+
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(3, true)]
+    [InlineData(0x55, false)]
+    public void TheExtensibleFormMustCarryPcmOrFloatInside(int subFormat, bool opens)
+    {
+        var wave = Path.Combine(app.Path, "tono.wav");
+        File.WriteAllBytes(wave, Wave(0xFFFE, (ushort)subFormat));
+
+        Assert.Equal(opens, ThemeManager.IsWaveFile(wave));
+    }
+
+    [Fact]
+    public void OtherChunksBeforeTheFormatAreSkipped()
+    {
+        var wave = Path.Combine(app.Path, "tono.wav");
+        File.WriteAllBytes(wave, Wave(1, listFirst: true));
+        var lying = Path.Combine(app.Path, "mentira.wav");
+        // Un trozo que dice medir más que el fichero entero.
+        File.WriteAllBytes(lying, [.. "RIFF"u8, 0, 0, 0, 0, .. "WAVE"u8, .. "LIST"u8, 0xFF, 0xFF, 0xFF, 0x7F]);
+
+        Assert.True(ThemeManager.IsWaveFile(wave));
+        Assert.False(ThemeManager.IsWaveFile(lying));
+    }
+
+    // Un WAV mínimo: cabecera, un trozo «fmt » con ese formato (extensible si se da subFormat) y datos.
+    private static byte[] Wave(ushort tag, ushort? subFormat = null, bool listFirst = false)
+    {
+        var body = new List<byte>("WAVE"u8.ToArray());
+        if (listFirst)
+        {
+            body.AddRange([.. "LIST"u8, 5, 0, 0, 0, .. "INFOx"u8, 0]); // 5 bytes y uno de relleno
+        }
+
+        var format = new List<byte>();
+        format.AddRange(BitConverter.GetBytes(tag));
+        format.AddRange([1, 0, 0x44, 0xAC, 0, 0, 0x88, 0x58, 1, 0, 2, 0, 16, 0]);
+        if (subFormat is { } sub)
+        {
+            format.AddRange([22, 0, 16, 0, 4, 0, 0, 0]);
+            format.AddRange(BitConverter.GetBytes((uint)sub));
+            format.AddRange([0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71]);
+        }
+
+        body.AddRange("fmt "u8.ToArray());
+        body.AddRange(BitConverter.GetBytes(format.Count));
+        body.AddRange(format);
+        body.AddRange([.. "data"u8, 2, 0, 0, 0, 0, 0]);
+        return [.. "RIFF"u8, .. BitConverter.GetBytes(body.Count), .. body];
     }
 
     [Fact]

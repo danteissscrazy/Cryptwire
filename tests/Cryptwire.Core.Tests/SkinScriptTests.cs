@@ -157,6 +157,53 @@ public class SkinScriptTests
     }
 
     [Fact]
+    public void EachLayerGetsItsOwnStyleInOrder()
+    {
+        // La piel está rota (un comentario sin cerrar): en el mismo <style> se tragaría el velo.
+        var engine = new Engine();
+        engine.Execute(FakeDom);
+
+        engine.Execute(SkinScript.Apply(["#app { color: red; } /* sin cerrar", "/*fondo*/", "/*velo*/"]));
+
+        Assert.Equal(3, MountedCount(engine));
+        Assert.Equal("cryptwire-skin,cryptwire-skin-2,cryptwire-skin-3", engine.Evaluate("mounted.map(function (m) { return m.id; }).join()").AsString());
+        Assert.Equal("/*velo*/", engine.Evaluate("mounted[2].textContent").AsString());
+    }
+
+    [Fact]
+    public void FewerLayersTakeTheLeftoversOff()
+    {
+        var engine = new Engine();
+        engine.Execute(FakeDom);
+        engine.Execute(SkinScript.Apply(["/*piel*/", "/*fondo*/", "/*velo*/"]));
+        engine.Execute("document.readyState = 'complete';");
+
+        engine.Execute(SkinScript.Apply(["/*piel*/"]));
+
+        Assert.Equal(1, MountedCount(engine));
+        Assert.Equal("/*piel*/", MountedCss(engine));
+    }
+
+    [Fact]
+    public void RemoveTakesEveryLayerOff()
+    {
+        var engine = new Engine();
+        engine.Execute(FakeDom);
+        engine.Execute(SkinScript.Apply(["/*piel*/", "/*fondo*/", "/*velo*/"]));
+
+        engine.Execute(SkinScript.Remove());
+
+        Assert.Equal(0, MountedCount(engine));
+    }
+
+    [Fact]
+    public void NoLayersOrTooManyAreRefused()
+    {
+        Assert.Throws<ArgumentException>(() => SkinScript.Apply(Array.Empty<string>()));
+        Assert.Throws<ArgumentException>(() => SkinScript.Apply(Enumerable.Repeat("a {}", SkinScript.MaxLayers + 1).ToList()));
+    }
+
+    [Fact]
     public void RemoveWithoutASkinIsHarmless()
     {
         var engine = new Engine();

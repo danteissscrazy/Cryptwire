@@ -26,13 +26,31 @@ public static class VeilCss
         """;
 }
 
-/// <summary>Todo el CSS que Cryptwire pone en la página, en orden: la piel, tu fondo y el velo.</summary>
+/// <summary>
+/// Todo el CSS que Cryptwire pone en la página, en orden: la piel, tu fondo y el velo. Cada uno es una capa
+/// aparte (su propio <c>&lt;style&gt;</c>): una piel con un error no se lleva por delante el fondo ni el velo.
+/// </summary>
 public static class PageCss
 {
-    /// <returns>El CSS junto, o null si no hay nada que poner (WhatsApp tal cual).</returns>
-    public static string? Compose(string? skin, string? wallpaper, bool veil)
+    /// <returns>Las capas que hay, o null si no hay nada que poner (WhatsApp tal cual).</returns>
+    public static IReadOnlyList<string>? Compose(string? skin, string? wallpaper, bool veil)
     {
-        var css = (skin ?? string.Empty) + (wallpaper ?? string.Empty) + (veil ? VeilCss.Css : string.Empty);
-        return css.Length > 0 ? css : null;
+        List<string> layers = [];
+        if (!string.IsNullOrEmpty(skin))
+        {
+            layers.Add(skin);
+        }
+
+        if (!string.IsNullOrEmpty(wallpaper))
+        {
+            layers.Add(wallpaper);
+        }
+
+        if (veil)
+        {
+            layers.Add(VeilCss.Css);
+        }
+
+        return layers.Count > 0 ? layers : null;
     }
 }

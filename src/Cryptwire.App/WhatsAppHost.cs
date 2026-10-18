@@ -59,9 +59,11 @@ internal sealed class WhatsAppHost(
 
         // La sesión del QR vive en %LOCALAPPDATA%\Cryptwire, nunca junto al ejecutable.
         Directory.CreateDirectory(paths.WebViewDataDir);
+        // Los volcados de un cierre inesperado se quedan en tu PC: la memoria del motor puede llevar trozos
+        // de tus chats y, si no, Windows se los mandaría a Microsoft.
         var environment = await CoreWebView2Environment.CreateAsync(
             userDataFolder: paths.WebViewDataDir,
-            options: new CoreWebView2EnvironmentOptions(additionalBrowserArguments: StayAwake));
+            options: new CoreWebView2EnvironmentOptions(additionalBrowserArguments: StayAwake) { IsCustomCrashReportingEnabled = true });
         await webView.EnsureCoreWebView2Async(environment);
         core = webView.CoreWebView2;
 
@@ -223,15 +225,15 @@ internal sealed class WhatsAppHost(
 
     private static void OpenInBrowser(string url)
     {
-        // Se vuelve a parsear para abrir siempre la forma normalizada de la dirección.
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        // Se vuelve a parsear para abrir siempre la forma normalizada de la dirección (y un mailto: sin adjuntos).
+        if (NavigationPolicy.ExternalTarget(url) is not { } target)
         {
             return;
         }
 
         try
         {
-            Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
         }
         catch (Win32Exception ex)
         {
