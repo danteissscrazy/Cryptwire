@@ -140,11 +140,11 @@ function Invoke-Page([string] $Expression) {
     $socket = [Net.WebSockets.ClientWebSocket]::new()
     $none = [Threading.CancellationToken]::None
     try {
-        $socket.ConnectAsync([Uri] $script:pageSocket, $none).GetAwaiter().GetResult()
+        $null = $socket.ConnectAsync([Uri] $script:pageSocket, $none).GetAwaiter().GetResult()
         $request = @{ id = 1; method = 'Runtime.evaluate'; params = @{ expression = $Expression; returnByValue = $true; awaitPromise = $true } } |
             ConvertTo-Json -Depth 5 -Compress
         $bytes = [Text.Encoding]::UTF8.GetBytes($request)
-        $socket.SendAsync([ArraySegment[byte]]::new($bytes), [Net.WebSockets.WebSocketMessageType]::Text, $true, $none).GetAwaiter().GetResult()
+        $null = $socket.SendAsync([ArraySegment[byte]]::new($bytes), [Net.WebSockets.WebSocketMessageType]::Text, $true, $none).GetAwaiter().GetResult()
         $buffer = [byte[]]::new(1MB)
         while ($true) {
             $message = [IO.MemoryStream]::new()
@@ -251,8 +251,9 @@ function Open-Cryptwire {
     }
     Show-BrowserProcess
     'página de WhatsApp: conectada'
-    Wait-Until { Invoke-Page "document.querySelectorAll('canvas').length > 0 && document.readyState === 'complete'" } 120 'no sale el QR de WhatsApp Web' | Out-Null
-    Start-Sleep -Seconds 4
+    # El QR de vincular es un <canvas> con tamaño; hasta entonces la web enseña su pantalla de carga.
+    Wait-Until { (Invoke-Page "[...document.querySelectorAll('canvas')].some(c => c.width > 100) && document.readyState === 'complete'") -eq $true } 120 'no sale el QR de WhatsApp Web' | Out-Null
+    Start-Sleep -Seconds 3
     "idioma de la página: $(Invoke-Page 'document.documentElement.lang'); estilos de Cryptwire: $(Invoke-Page '[...document.querySelectorAll(''style[id^=cryptwire]'')].map(s => s.id).join('', '')')"
     Hide-Qr
 }
@@ -305,20 +306,22 @@ while ($true) {
 
 Step 'Aviso'
 Open-Cryptwire
-# El aviso solo sale si no estás en Cryptwire: se minimiza y se vuelve a enseñar sin activarla.
-$null = [Win]::ShowWindow($main.Hwnd, 7)  # SW_SHOWMINNOACTIVE
-Start-Sleep -Milliseconds 600
-$null = [Win]::ShowWindow($main.Hwnd, 4)  # SW_SHOWNOACTIVATE
+# El aviso solo sale si no estás en Cryptwire: se minimiza (minimizada no cuenta como estar en ella).
+$null = [Win]::ShowWindow($main.Hwnd, 6)  # SW_MINIMIZE
 Start-Sleep -Seconds 1
-Hide-Qr
 $avatar = New-AvatarDataUri
 $body = '¿Nos vemos a medianoche en la cripta?'
-Invoke-Page "new Notification('Lilith', { body: '$body', icon: '$avatar', tag: 'cryptwire-captura' }); true" | Out-Null
-$toast = Wait-Until { Get-ProcessWindows $process.Id | Where-Object { $_.Hwnd -ne $main.Hwnd -and $_.Width -lt 700 -and $_.Height -lt 400 } | Select-Object -First 1 } 15 'no sale el aviso'
+"aviso lanzado: $(Invoke-Page "new Notification('Lilith', { body: '$body', icon: '$avatar', tag: 'cryptwire-captura' }); Notification.permission")"
+try {
+    $toast = Wait-Until { Get-ProcessWindows $process.Id | Where-Object { $_.Hwnd -ne $main.Hwnd -and $_.Width -lt 700 -and $_.Height -lt 400 } | Select-Object -First 1 } 15 'no sale el aviso'
+} catch {
+    Get-ProcessWindows $process.Id | ForEach-Object { "ventana de Cryptwire: '$($_.Title)' $($_.Width)x$($_.Height)" }
+    Save-Screen 0 0 $screenWidth $screenHeight 'pantalla-sin-aviso.png'
+    throw
+}
 Start-Sleep -Milliseconds 1500
 $t = Get-Rect $toast.Hwnd
 $pad = 24
 Save-Screen ($t.Left - $pad) ($t.Top - $pad) ($t.Right - $t.Left + 2 * $pad) ($t.Bottom - $t.Top + 2 * $pad) '03-aviso.png'
-Save-Screen 0 0 $screenWidth $screenHeight '04-escritorio.png'
 Close-Cryptwire
 'OK'
