@@ -1,5 +1,5 @@
-# Cada push a main o a una rama de fase y cada pull request: historial sin secretos, tests, publicación
-# escaneada e instalador.
+# Cada push a main y cada pull request: historial sin secretos, tests, publicación escaneada, instalador y su
+# prueba en un Windows sin WebView2. También antes de cada versión (release.yml).
 # Lo mismo que hace tools\empaquetar.ps1 en local, en una máquina limpia de GitHub.
 #
 # - Sin las reglas de datos personales: viven fuera del repo y no se suben ni como secreto. Lo que llega
@@ -10,7 +10,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "fase-*"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
   # La llama release.yml antes de hacer el borrador de una versión.
