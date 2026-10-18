@@ -56,10 +56,12 @@ function Format-WebView2($State) {
 }
 
 # Lanza una orden con el token del modo. En «usuario», runas con el nivel «usuario básico» le quita el
-# grupo de administradores. runas no espera a que termine: quien llama espera aparte.
+# grupo de administradores. runas no espera a que termine: quien llama espera aparte. Se espera solo a
+# runas con WaitForExit: Start-Process -Wait espera también a sus descendientes, y Cryptwire no acaba.
 function Start-AsMode([string] $File, [string] $Arguments) {
     if ($Modo -eq 'usuario') {
-        $p = Start-Process -FilePath runas.exe -ArgumentList "/trustlevel:0x20000 `"$File $Arguments`"" -NoNewWindow -Wait -PassThru
+        $p = Start-Process -FilePath runas.exe -ArgumentList "/trustlevel:0x20000 `"$File $Arguments`"" -NoNewWindow -PassThru
+        $p.WaitForExit()
         if ($p.ExitCode -ne 0) { throw "runas no ha podido lanzar $File (salida $($p.ExitCode))." }
     } elseif ($Arguments) {
         $null = Start-Process -FilePath $File -ArgumentList $Arguments

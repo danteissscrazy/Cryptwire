@@ -108,6 +108,9 @@ Type: files; Name: "{app}\*.json"
 
 [Files]
 Source: "{#Publicado}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; La licencia de Cryptwire y las de lo que va dentro (.NET, el SDK de WebView2, las fuentes) viajan con la app.
+Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
+Source: "..\THIRD-PARTY-NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#WebView2}"; DestName: "MicrosoftEdgeWebview2Setup.exe"; Flags: dontcopy
 
 [Icons]
