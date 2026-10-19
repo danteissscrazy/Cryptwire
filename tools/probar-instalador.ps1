@@ -159,6 +159,22 @@ Start-AsMode $exe '--salir'
 Wait-Until { -not (Get-Process -Name Cryptwire -ErrorAction SilentlyContinue) } 30 'Cryptwire no se ha cerrado con --salir'
 'cerrada con --salir'
 
+# Como al iniciar Windows, con la ventana guardada maximizada: WPF no enseña sin activar una ventana
+# maximizada, y Cryptwire se quedaba con un diálogo de error y sin WhatsApp (sin avisos).
+Step 'Arranca en la bandeja con la ventana maximizada'
+$settingsFile = Join-Path $env:LOCALAPPDATA 'Cryptwire\settings.json'
+$settings = if (Test-Path -LiteralPath $settingsFile) { Get-Content -LiteralPath $settingsFile -Raw | ConvertFrom-Json } else { [pscustomobject]@{} }
+$settings | Add-Member -NotePropertyName window -NotePropertyValue ([pscustomobject]@{ left = 100; top = 100; right = 1100; bottom = 800; maximized = $true }) -Force
+$settings | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $settingsFile -Encoding utf8
+Start-AsMode $exe '--bandeja'
+Wait-Until { (Get-CryptwireWebViews).Count -gt 0 } 120 'no hay procesos de WebView2 con el perfil de Cryptwire'
+"$((Get-CryptwireWebViews).Count) procesos de WebView2 con el perfil de Cryptwire"
+# Mientras carga se enseña minimizada; cargada, se esconde. Una ventana a la vista (un diálogo) no se va.
+Wait-Until { $p = Get-Process -Name Cryptwire -ErrorAction SilentlyContinue; $p -and $p[0].MainWindowHandle -eq [IntPtr]::Zero } 60 'Cryptwire tiene una ventana a la vista (¿un diálogo de error?)'
+'en la bandeja, sin ventana'
+Start-AsMode $exe '--salir'
+Wait-Until { -not (Get-Process -Name Cryptwire -ErrorAction SilentlyContinue) } 30 'Cryptwire no se ha cerrado con --salir'
+
 # La carpeta no se puede cambiar ni a mano (/DIR=): en una compartida, otros podrían cambiar lo que arranca.
 Step 'Otra carpeta se rechaza'
 $other = Join-Path $Salida 'otra-carpeta'
@@ -170,4 +186,4 @@ if (Test-Path (Join-Path $other 'Cryptwire.exe')) { throw "hay una Cryptwire en 
 if (-not (Select-String -Path $otherLog -Pattern 'se instala siempre en' -SimpleMatch -Quiet)) { throw 'el instalador ha fallado, pero no por la carpeta (ver instalador-otra-carpeta.log).' }
 "rechazada: $other"
 
-"`nOK: sin WebView2, el instalador ($Modo) lo instala, Cryptwire arranca con él y no se instala en otra carpeta."
+"`nOK: sin WebView2, el instalador ($Modo) lo instala, Cryptwire arranca con él (también en la bandeja) y no se instala en otra carpeta."

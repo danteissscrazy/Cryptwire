@@ -146,6 +146,11 @@ public partial class MainWindow : Window
         startingHidden = true;
         ShowActivated = false;
         ShowInTaskbar = false;
+
+        // La ventana ya existe para Windows (el menú de la ventana la crea al enlazar con las pieles), así
+        // que OnSourceInitialized ya ha pasado y ha podido dejarla maximizada: WPF se niega a enseñar sin
+        // activar una ventana maximizada, y sin minimizar se vería un momento en la pantalla.
+        MinimizeForHiddenStart();
         Show();
     }
 
@@ -197,13 +202,21 @@ public partial class MainWindow : Window
 
         if (startingHidden)
         {
-            // Se abrirá como la dejaste (maximizada o no) cuando la saques de la bandeja.
-            shownState = WindowState;
-            WindowState = WindowState.Minimized;
+            MinimizeForHiddenStart();
         }
 
         // Después de WindowChrome, para que este gancho vaya antes que el suyo.
         HwndSource.FromHwnd(new WindowInteropHelper(this).Handle).AddHook(OnMessage);
+    }
+
+    /// <summary>Minimizada mientras arranca escondida; se abrirá como la dejaste (maximizada o no) al sacarla de la bandeja.</summary>
+    private void MinimizeForHiddenStart()
+    {
+        if (WindowState != WindowState.Minimized)
+        {
+            shownState = WindowState;
+            WindowState = WindowState.Minimized;
+        }
     }
 
     private static string Spaced(string text) => string.Join(HairSpace, text.ToUpperInvariant().EnumerateRunes());
