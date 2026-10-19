@@ -16,7 +16,10 @@
   <a href="#code-signing-policy">Code signing policy</a>
 </p>
 
-![Los ajustes de Cryptwire con la piel Relicario](docs/capturas/ajustes.png)
+![La vista de chats de Cryptwire con la piel Relicario, con chats y contactos inventados](docs/capturas/chats.png)
+
+<sub>La captura es una maqueta: la página de WhatsApp Web con la piel, rellena de chats, mensajes y fotos
+inventados.</sub>
 
 Cryptwire abre WhatsApp Web en una ventana propia y la viste con una piel: el Relicario de serie, en azul
 noche, plata, oro y filo de hielo, o la tuya. Añade lo que la web no tiene: avisos propios con la foto del
@@ -104,6 +107,8 @@ capas.
 
 Todo se cambia en **Ajustes de Cryptwire**: el botón «Ajustes» de la barra de título, el menú de la
 ventana o el icono de la bandeja. Se guarda en `%LOCALAPPDATA%\Cryptwire\settings.json`.
+
+![Los ajustes de Cryptwire con la piel Relicario](docs/capturas/ajustes.png)
 
 <p align="center">
   <img src="docs/capturas/aviso.png" width="440" alt="Un aviso de Cryptwire: la foto del contacto dentro del marco de cuchillas, su nombre y el mensaje" />
