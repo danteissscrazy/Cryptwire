@@ -156,6 +156,36 @@ public class NotificationRouterTests
     }
 
     [Fact]
+    public void WithCryptwireInFrontOnlyTheTestNoticeShows()
+    {
+        context = context with { WindowActive = true };
+        var test = new IncomingNotification(WhatsApp, "WhatsApp", "Prueba", NotificationBridgeScript.WorkerTagPrefix + "verify-notification");
+        var router = Router();
+
+        router.Handle(message);
+        router.Handle(call);
+        router.Handle(test);
+
+        var shown = Assert.Single(toast.Shown);
+        Assert.Equal(("WhatsApp", NotificationKind.Message), (shown.Title, shown.Kind));
+    }
+
+    [Fact]
+    public void TheTestNoticeStillRespectsTheDesktopAndYourSettings()
+    {
+        var test = new IncomingNotification(WhatsApp, "WhatsApp", "Prueba", NotificationBridgeScript.WorkerTagPrefix + "verify-notification");
+
+        context = new DeliveryContext(ToastsOn: true, WindowActive: true, DesktopState.Busy);
+        Router().Handle(test);
+        context = new DeliveryContext(ToastsOn: false, WindowActive: true, DesktopState.Available);
+        Router().Handle(test);
+        context = new DeliveryContext(ToastsOn: true, WindowActive: true, DesktopState.Available, Silenced: true);
+        Router().Handle(test);
+
+        Assert.Empty(toast.Shown);
+    }
+
+    [Fact]
     public void ChatsThatNotifyAreRememberedForTheSettingsButNotTheTestNotice()
     {
         var router = Router();

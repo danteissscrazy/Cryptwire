@@ -27,4 +27,11 @@ public sealed record IncomingNotification(string Origin, string Title, string Bo
 {
     public NotificationKind Kind =>
         NotificationBridgeScript.IsCallTag(Tag) ? NotificationKind.Call : NotificationKind.Message;
+
+    /// <summary>
+    /// Llega por el service worker de WhatsApp y no es una llamada: el aviso de prueba («Enviar notificación de
+    /// prueba» en sus ajustes), que lo pides tú desde la propia ventana.
+    /// </summary>
+    public bool IsWorkerNotice =>
+        Kind != NotificationKind.Call && Tag?.StartsWith(NotificationBridgeScript.WorkerTagPrefix, StringComparison.Ordinal) == true;
 }

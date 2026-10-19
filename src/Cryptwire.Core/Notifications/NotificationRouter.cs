@@ -33,8 +33,16 @@ public sealed class NotificationRouter(ISoundPlayer soundPlayer, IToastService t
 
         var key = $"aviso-{++count}";
         var kind = notification.Kind;
-        var delivery = DeliveryPolicy.Decide(kind, context());
-        if (kind == NotificationKind.Call || notification.Tag?.StartsWith(NotificationBridgeScript.WorkerTagPrefix, StringComparison.Ordinal) != true)
+        var now = context();
+        // El aviso de prueba lo pides desde la propia ventana: sale aunque estés en Cryptwire, que es justo
+        // cuando lo quieres ver. Lo demás que pone Windows (pantalla completa, Sigilo, tu ajuste) sí cuenta.
+        if (notification.IsWorkerNotice)
+        {
+            now = now with { WindowActive = false };
+        }
+
+        var delivery = DeliveryPolicy.Decide(kind, now);
+        if (!notification.IsWorkerNotice)
         {
             Recent.Add(notification.Title);
         }

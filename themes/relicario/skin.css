@@ -405,21 +405,53 @@ body:has(#pane-side) header:has([data-testid="wa-wordmark"]) button:not([aria-ha
 }
 
 /* Relicario: el retrato, más pequeño, dentro de una corona de cuchillas en espiral (tools/generar-cuchillas.py).
-   Sin leer, cuchillas carmesí; abierto, cuchillas de hielo girando despacio como una sierra. */
-#pane-side [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg)),
+   Sin leer, cuchillas carmesí; abierto, cuchillas de hielo girando despacio como una sierra.
+   La corona va una vez por fila, alrededor del avatar, que en la lista llega de cuatro formas:
+   - la foto, un <img>;
+   - sin foto, un icono (span > svg);
+   - la foto recortada para dejar sitio a una insignia, como la del chat temporal: un svg con la imagen
+     dentro y, al lado, la insignia, que es otro icono. La corona rodea a las dos y la insignia queda encima;
+   - un subgrupo de comunidad (subgroup-identity): dos caras dentro de un hexágono. La corona rodea el
+     conjunto, no a cada cara.
+   Nunca a una insignia suelta ni a las caras de dentro de un subgrupo. */
+#pane-side [data-testid="cell-frame-container"] > div:first-child :is(
+  div:has(> img):not([data-testid="subgroup-identity"] *),
+  div:has(> span > svg):not(div:has(svg image) > *, [data-testid="subgroup-identity"] *),
+  div:has(> div svg image):has(> div > span > svg),
+  [data-testid="subgroup-identity"]),
 #main header div:has(> img) {
   position: relative;
   overflow: visible !important;
 }
 
-#pane-side [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg)) > :is(img, span),
+#pane-side [data-testid="cell-frame-container"] > div:first-child :is(
+  div:has(> img):not([data-testid="subgroup-identity"] *) > img,
+  div:has(> span > svg):not(div:has(svg image) > *, [data-testid="subgroup-identity"] *) > span),
 #main header div:has(> img) > img {
   transform: scale(.75);
   box-shadow: 0 0 0 1px rgba(69, 212, 255, .4);
   border-radius: 50%;
 }
 
-#pane-side [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg))::after,
+/* La foto recortada encoge como las demás; su insignia, en su sitio y por encima de la corona. */
+#pane-side [data-testid="cell-frame-container"] > div:first-child div:has(> div svg image):has(> div > span > svg) > div:has(svg image) {
+  transform: scale(.75);
+}
+
+#pane-side [data-testid="cell-frame-container"] > div:first-child div:has(> div svg image):has(> div > span > svg) > div:has(> span > svg) {
+  z-index: 2;
+}
+
+/* El subgrupo encoge entero; su corona, con el mismo tamaño que las demás (49 px × 1,5 × 0,75 ≈ 55 px). */
+#pane-side [data-testid="cell-frame-container"] > div:first-child [data-testid="subgroup-identity"] {
+  transform: scale(.75);
+}
+
+#pane-side [data-testid="cell-frame-container"] > div:first-child :is(
+  div:has(> img):not([data-testid="subgroup-identity"] *),
+  div:has(> span > svg):not(div:has(svg image) > *, [data-testid="subgroup-identity"] *),
+  div:has(> div svg image):has(> div > span > svg),
+  [data-testid="subgroup-identity"])::after,
 #main header div:has(> img)::after {
   content: "";
   position: absolute;
@@ -428,18 +460,34 @@ body:has(#pane-side) header:has([data-testid="wa-wordmark"]) button:not([aria-ha
   background: url("adornos/cuchillas.svg") center / 100% 100% no-repeat;
 }
 
-#pane-side [data-testid="cell-frame-container"]:has([data-testid="icon-unread-count"]) > div:first-child div:is(:has(> img), :has(> span > svg))::after {
+#pane-side [data-testid="cell-frame-container"] > div:first-child [data-testid="subgroup-identity"]::after {
+  inset: -25%;
+}
+
+#pane-side [data-testid="cell-frame-container"]:has([data-testid="icon-unread-count"]) > div:first-child :is(
+  div:has(> img):not([data-testid="subgroup-identity"] *),
+  div:has(> span > svg):not(div:has(svg image) > *, [data-testid="subgroup-identity"] *),
+  div:has(> div svg image):has(> div > span > svg),
+  [data-testid="subgroup-identity"])::after {
   background-image: url("adornos/cuchillas-sin-leer.svg");
   filter: drop-shadow(0 0 4px rgba(240, 71, 92, .55));
 }
 
-#pane-side [aria-selected="true"] > [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg))::after,
+#pane-side [aria-selected="true"] > [data-testid="cell-frame-container"] > div:first-child :is(
+  div:has(> img):not([data-testid="subgroup-identity"] *),
+  div:has(> span > svg):not(div:has(svg image) > *, [data-testid="subgroup-identity"] *),
+  div:has(> div svg image):has(> div > span > svg),
+  [data-testid="subgroup-identity"])::after,
 #main header div:has(> img)::after {
   background-image: url("adornos/cuchillas-activo.svg");
   filter: drop-shadow(0 0 5px rgba(69, 212, 255, .6));
 }
 
-#pane-side [aria-selected="true"] > [data-testid="cell-frame-container"] > div:first-child div:is(:has(> img), :has(> span > svg))::after {
+#pane-side [aria-selected="true"] > [data-testid="cell-frame-container"] > div:first-child :is(
+  div:has(> img):not([data-testid="subgroup-identity"] *),
+  div:has(> span > svg):not(div:has(svg image) > *, [data-testid="subgroup-identity"] *),
+  div:has(> div svg image):has(> div > span > svg),
+  [data-testid="subgroup-identity"])::after {
   animation: cw-spin 30s linear infinite;
 }
 
