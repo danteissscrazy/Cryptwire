@@ -59,7 +59,7 @@ y ejecútalo:
   ajustes, tonos y fondos, en `%LOCALAPPDATA%\Cryptwire`). Desinstalar (Configuración › Aplicaciones)
   pregunta si los borra también.
 
-![Cryptwire recién instalada, lista para vincular: la ventana, la barra de título y los widgets son de Cryptwire; dentro, WhatsApp Web con el QR difuminado](docs/capturas/ventana.png)
+![Cryptwire recién instalada, lista para vincular: la ventana, la barra de título y los widgets son de Cryptwire; dentro, la página de vincular de WhatsApp Web con la piel y el QR difuminado](docs/capturas/ventana.png)
 
 ## Pieles
 
