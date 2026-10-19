@@ -690,6 +690,184 @@ body:has(#pane-side) header:has([data-testid="wa-wordmark"]) button:not([aria-ha
   background: transparent !important;
 }
 
+/* Página de vincular el móvil (QR y número de teléfono). Sus colores no son variables: van fijos en
+   clases generadas. Para no depender de ellas, dentro de la página todo pierde su fondo y toma el color
+   del texto de la piel, y luego se viste lo que tiene gancho estable. Si un gancho cambia, la página
+   sigue legible: claro sobre la noche. El QR es la excepción: oscuro sobre claro, como lo leen los
+   móviles. La página es el hijo de .app-wrapper-web con el logotipo y sin la lista de chats. */
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) {
+  background: var(--cw-wallpaper), var(--cw-bg-chrome) !important;
+  color: var(--cw-silver-50) !important;
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) *:not([data-testid="link-device-qr-code"], [data-testid="link-device-qr-code"] *) {
+  background-color: transparent !important;
+  border-color: var(--cw-line-strong) !important;
+  color: inherit !important;
+}
+
+/* Cabecera: «◆ Vincular // enlace», como la de la lista de chats. El rombo es el sitio del logotipo. */
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) :is([data-testid="wa-logo"], [data-testid="wa-wordmark"]) > * {
+  display: none !important;
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid="wa-logo"] {
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
+  margin: 11px 6px 0 8px;
+  transform: rotate(45deg);
+  background-color: var(--cw-crimson-400) !important;
+  box-shadow: 0 0 8px rgba(240, 71, 92, .8);
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid="wa-wordmark"] {
+  display: flex !important;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid="wa-wordmark"]::before {
+  content: "Vincular";
+  font: 700 21px/1.1 var(--cw-font-title);
+  letter-spacing: var(--cw-title-track);
+  text-transform: uppercase;
+  color: var(--cw-silver-50);
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid="wa-wordmark"]::after {
+  content: "// enlace";
+  font: 400 11px/1 var(--cw-font-meta);
+  letter-spacing: var(--cw-label-track);
+  text-transform: uppercase;
+  color: var(--cw-ice-400);
+}
+
+/* Tarjeta: panel de la noche con filo de hielo y escuadras de oro en las esquinas. */
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) > div > div > div:has(#link-device-instructions-list, [data-testid$="-screen"]) {
+  border-radius: 0 !important;
+  background:
+    linear-gradient(var(--cw-gold-400) 0 0) left 10px top 10px / 22px 1.5px no-repeat,
+    linear-gradient(var(--cw-gold-400) 0 0) left 10px top 10px / 1.5px 22px no-repeat,
+    linear-gradient(var(--cw-gold-400) 0 0) right 10px bottom 10px / 22px 1.5px no-repeat,
+    linear-gradient(var(--cw-gold-400) 0 0) right 10px bottom 10px / 1.5px 22px no-repeat,
+    rgba(7, 12, 24, .92) !important;
+  box-shadow: 0 0 0 1px rgba(69, 212, 255, .08), 0 18px 60px rgba(0, 0, 0, .55), inset 0 0 40px rgba(69, 212, 255, .05);
+}
+
+/* Títulos en Cinzel, como los nombres de los chats. */
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) :is(
+  div:has(+ [data-testid="link_device_qr_phone_number_shortcut_link"]),
+  [data-testid$="-screen"] > div:first-child > div) {
+  font-family: var(--cw-font-title) !important;
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  letter-spacing: var(--cw-title-track);
+  text-transform: uppercase;
+  color: var(--cw-silver-50) !important;
+}
+
+/* Pasos: placas recortadas con la cifra en mono; los une una regla de oro. */
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) #link-device-instructions-list li > div:first-child {
+  border: 0 !important;
+  border-radius: 0 !important;
+  clip-path: var(--cw-chamfer-sm);
+  background-color: #0d1a33 !important;
+  box-shadow: inset 0 0 0 1px rgba(69, 212, 255, .55);
+  color: var(--cw-ice-300) !important;
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) #link-device-instructions-list li > div:first-child * {
+  font-family: var(--cw-font-meta) !important;
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) #link-device-instructions-list > div {
+  background: repeating-linear-gradient(180deg, rgba(220, 182, 99, .6) 0 3px, transparent 3px 7px) !important;
+}
+
+/* El QR, en su relicario: claro, con marco de oro y escuadras de hielo por fuera. */
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid="link-device-qr-code"] {
+  overflow: visible !important;
+  border-radius: 0 !important;
+  background: #f4f6fb !important;
+  box-shadow: 0 0 0 10px #f4f6fb, 0 0 0 11px var(--cw-gold-400), 0 0 22px 11px rgba(69, 212, 255, .18);
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid="link-device-qr-code"]::after {
+  content: "";
+  position: absolute;
+  inset: -22px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--cw-ice-400) 0 0) left top / 16px 1.5px no-repeat,
+    linear-gradient(var(--cw-ice-400) 0 0) left top / 1.5px 16px no-repeat,
+    linear-gradient(var(--cw-ice-400) 0 0) right top / 16px 1.5px no-repeat,
+    linear-gradient(var(--cw-ice-400) 0 0) right top / 1.5px 16px no-repeat,
+    linear-gradient(var(--cw-ice-400) 0 0) left bottom / 16px 1.5px no-repeat,
+    linear-gradient(var(--cw-ice-400) 0 0) left bottom / 1.5px 16px no-repeat,
+    linear-gradient(var(--cw-ice-400) 0 0) right bottom / 16px 1.5px no-repeat,
+    linear-gradient(var(--cw-ice-400) 0 0) right bottom / 1.5px 16px no-repeat;
+}
+
+/* Enlaces en oro, subrayado tenue; en hielo al pasar. */
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [role="button"][data-testid^="link_device"] {
+  color: var(--cw-gold-400) !important;
+  text-decoration-color: rgba(220, 182, 99, .45) !important;
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [role="button"][data-testid^="link_device"]:hover {
+  color: var(--cw-ice-300) !important;
+}
+
+/* Pie: tenue, con el candado en oro y las condiciones en mono. */
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) :is(
+  div:has(> div > [data-testid="link_device_landing_get_started_link"]) > div:first-child,
+  div:has(+ [data-testid="link-device-qrcode-alt-linking-tc"])) {
+  color: var(--cw-silver-400) !important;
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) div:has(+ [data-testid="link-device-qrcode-alt-linking-tc"]) svg {
+  color: var(--cw-gold-400) !important;
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid="link-device-qrcode-alt-linking-tc"] {
+  font-family: var(--cw-font-meta) !important;
+  letter-spacing: .06em;
+  color: var(--cw-silver-600) !important;
+}
+
+/* Entrar con el número: caja recortada con filo de hielo y botón de oro. */
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) :is([data-testid="phone-number-country-selector"], [data-testid="link_device_phone_number_input_wrapper"] > div) {
+  border-radius: 0 !important;
+  background-color: var(--cw-bg-input) !important;
+  box-shadow: inset 0 0 0 1px var(--cw-line-strong);
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid="phone-number-input"] {
+  caret-color: var(--cw-gold-400);
+}
+
+/* Encima de la caja, la web calca el prefijo en transparente para colocar detrás la máscara del número. */
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid="link_device_phone_number_input_wrapper"] [aria-hidden="true"] > span:first-child {
+  color: transparent !important;
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid="link_device_phone_number_input_wrapper"] [aria-hidden="true"] > span:not(:first-child) {
+  color: var(--cw-silver-600) !important;
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid$="-screen"] button:not([data-testid]) {
+  border-radius: 0 !important;
+  clip-path: var(--cw-chamfer-sm);
+  background: linear-gradient(160deg, var(--cw-gold-300), var(--cw-gold-500)) !important;
+  color: var(--cw-night-950) !important;
+}
+
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) [data-testid$="-screen"] button:not([data-testid]):disabled {
+  background: var(--cw-night-700) !important;
+  color: var(--cw-silver-600) !important;
+}
+
 /* ── 3. Lado de cada burbuja ──────────────────────────────────────────────────────────────────
    .x1g5lz36 pinta las enviadas (background-color: var(--WDS-systems-bubble-surface-outgoing)) y
    .x1ew7x2d las recibidas. Las enviadas llevan filo de oro y el corte al otro lado. */
