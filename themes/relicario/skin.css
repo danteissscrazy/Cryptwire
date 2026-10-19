@@ -703,6 +703,7 @@ body:has(#pane-side) header:has([data-testid="wa-wordmark"]) button:not([aria-ha
 .app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) *:not([data-testid="link-device-qr-code"], [data-testid="link-device-qr-code"] *) {
   background-color: transparent !important;
   border-color: var(--cw-line-strong) !important;
+  border-radius: 0 !important;
   color: inherit !important;
 }
 
@@ -743,9 +744,11 @@ body:has(#pane-side) header:has([data-testid="wa-wordmark"]) button:not([aria-ha
   color: var(--cw-ice-400);
 }
 
-/* Tarjeta: panel de la noche con filo de hielo y escuadras de oro en las esquinas. */
-.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) > div > div > div:has(#link-device-instructions-list, [data-testid$="-screen"]) {
-  border-radius: 0 !important;
+/* Tarjetas (la del QR o el número y, según el país, las de descargar la app o crear una cuenta): panel de
+   la noche con filo de hielo y escuadras de oro en las esquinas. Ni la cabecera ni el pie. */
+.app-wrapper-web > div:has([data-testid="wa-wordmark"]):not(:has(#side)) > div > div > div:not(:has(
+  [data-testid="wa-logo"], [data-testid="wa-wordmark"], [data-testid="link-device-qrcode-alt-linking-tc"],
+  [data-testid="link_device_landing_get_started_link"])) {
   background:
     linear-gradient(var(--cw-gold-400) 0 0) left 10px top 10px / 22px 1.5px no-repeat,
     linear-gradient(var(--cw-gold-400) 0 0) left 10px top 10px / 1.5px 22px no-repeat,
